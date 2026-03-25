@@ -28,7 +28,7 @@ if os.path.exists(_env):
             k, v = line.split("=", 1)
             os.environ.setdefault(k.strip(), v.strip())
 
-from wheel_params import DELTA_MIN, DELTA_MAX, EXPIRATION_MIN, EXPIRATION_MAX, OPEN_INTEREST_MIN
+from wheel.config.params import DELTA_MIN, DELTA_MAX, EXPIRATION_MIN, EXPIRATION_MAX, OPEN_INTEREST_MIN
 
 KEY    = os.environ["ALPACA_API_KEY"]
 SECRET = os.environ["ALPACA_SECRET_KEY"]
