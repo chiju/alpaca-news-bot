@@ -40,18 +40,22 @@ if __name__ == "__main__":
     mkt_neg = sum(1 for l, _ in mkt_scores if l == "negative")
     mkt_mood = "🟢 Bullish" if mkt_pos > mkt_neg else ("🔴 Bearish" if mkt_neg > mkt_pos else "⚪ Neutral")
 
-    # 3. Score portfolio articles (high confidence only)
+    # 3. Score portfolio articles (high confidence only, deduplicated by URL)
     scored = []
+    seen_urls = set()
     for a in portfolio_news:
+        if a.url in seen_urls:
+            continue
         syms = [s for s in a.symbols if s in PORTFOLIO]
         if not syms or any(w in a.headline.lower() for w in NOISE):
             continue
         text = a.summary if a.summary else a.headline
         label, score = get_sentiment(text)
         if score < MIN_CONFIDENCE:
-            continue  # Skip low confidence
+            continue
+        seen_urls.add(a.url)
         for sym in syms:
-            save(sym, label, score)  # Save to history
+            save(sym, label, score)
         scored.append({"syms": syms, "label": label, "score": score,
                        "headline": a.headline, "url": a.url})
 
