@@ -8,15 +8,15 @@ DB_PATH = os.path.join(os.path.dirname(__file__), "sentiment_history.db")
 def _conn():
     db = sqlite3.connect(DB_PATH)
     db.execute("""CREATE TABLE IF NOT EXISTS history (
-        symbol TEXT, label TEXT, score REAL, headline TEXT, ts TEXT
+        symbol TEXT, label TEXT, score REAL, headline TEXT, url TEXT, ts TEXT
     )""")
     db.commit()
     return db
 
 
-def save(symbol: str, label: str, score: float, headline: str = ""):
+def save(symbol: str, label: str, score: float, headline: str = "", url: str = ""):
     """Save to SQLite and Google Sheets - skip if same headline already saved today."""
-    ts = datetime.utcnow().isoformat()
+    ts = datetime.utcnow().isoformat()  # store UTC
     today = ts[:10]
 
     with _conn() as db:
@@ -29,11 +29,11 @@ def save(symbol: str, label: str, score: float, headline: str = ""):
         if exists:
             return  # Skip duplicate
 
-        db.execute("INSERT INTO history VALUES (?,?,?,?,?)",
-                   (symbol, label, score, headline[:100], ts))
+        db.execute("INSERT INTO history VALUES (?,?,?,?,?,?)",
+                   (symbol, label, score, headline[:100], url, ts))
 
     # Only append to Sheets if not a duplicate
-    _append_to_sheets(symbol, label, score, headline, ts)
+    _append_to_sheets(symbol, label, score, headline, url, ts)
 
 
 def get_trend(symbol: str, last_n: int = 3) -> str:
@@ -46,7 +46,7 @@ def get_trend(symbol: str, last_n: int = 3) -> str:
     return "".join(emoji.get(r[0], "⚪") for r in reversed(rows))
 
 
-def _append_to_sheets(symbol: str, label: str, score: float, headline: str, ts: str):
+def _append_to_sheets(symbol: str, label: str, score: float, headline: str, url: str, ts: str):
     """Append a row to Google Sheets."""
     sheet_id = os.environ.get("GOOGLE_SHEET_ID")
     if not sheet_id:
@@ -71,14 +71,36 @@ def _append_to_sheets(symbol: str, label: str, score: float, headline: str, ts: 
 
         service = build("sheets", "v4", credentials=creds, cache_discovery=False)
         emoji = {"positive": "🟢", "negative": "🔴", "neutral": "⚪"}
-        date, time = ts[:10], ts[11:16]
+        # Convert UTC to CET (UTC+1) or CEST (UTC+2 in summer)
+        from datetime import timezone, timedelta
+        utc_dt = datetime.fromisoformat(ts)
+        cet_dt = utc_dt + timedelta(hours=1)  # CET = UTC+1
+        date, time = cet_dt.strftime("%Y-%m-%d"), cet_dt.strftime("%H:%M")
 
-        service.spreadsheets().values().append(
+        # Get sheet ID number for insert operation
+        meta = service.spreadsheets().get(spreadsheetId=sheet_id).execute()
+        sheet_id_num = next(
+            s["properties"]["sheetId"] for s in meta["sheets"]
+            if s["properties"]["title"] == "Sheet1"
+        )
+
+        # Insert blank row at position 2 (after header)
+        service.spreadsheets().batchUpdate(
             spreadsheetId=sheet_id,
-            range="Sheet1!A:F",
+            body={"requests": [{"insertDimension": {
+                "range": {"sheetId": sheet_id_num, "dimension": "ROWS",
+                          "startIndex": 1, "endIndex": 2},
+                "inheritFromBefore": False
+            }}]}
+        ).execute()
+
+        # Write to row 2
+        service.spreadsheets().values().update(
+            spreadsheetId=sheet_id,
+            range="Sheet1!A2:G2",
             valueInputOption="USER_ENTERED",
             body={"values": [[date, time, symbol, emoji.get(label, "⚪") + " " + label,
-                              round(score * 100), headline[:100]]]}
+                              round(score * 100), headline[:100], url]]}
         ).execute()
     except Exception as e:
         print(f"Sheets warning: {e}")

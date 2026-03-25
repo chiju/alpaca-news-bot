@@ -19,6 +19,8 @@ from history import save, get_trend
 from notifier import send
 from options import get_options_opportunities, format_options_section
 from journal import sync_trades
+from reddit import get_reddit_sentiment, format_reddit_section
+from options_flow import get_unusual_flow, format_flow_section
 
 PORTFOLIO = [
     "POET","AMZN","NVDA","UUUU","PLTR","TSLA",
@@ -67,7 +69,7 @@ if __name__ == "__main__":
             continue
         seen_urls.add(a.url)
         for sym in syms:
-            save(sym, label, score, a.headline)
+            save(sym, label, score, a.headline, a.url)
         scored.append({"syms": syms, "label": label, "score": score,
                        "headline": a.headline, "url": a.url})
 
@@ -140,7 +142,7 @@ if __name__ == "__main__":
                 continue  # same threshold as portfolio
             seen_watch.add(a.url)
             for sym in syms:
-                save(sym, label, score, a.headline)
+                save(sym, label, score, a.headline, a.url)
             watch_scored.append({"syms": syms, "label": label, "score": score,
                                   "headline": a.headline, "url": a.url})
         if watch_scored:
@@ -153,13 +155,24 @@ if __name__ == "__main__":
 
     # Options opportunities (morning + EOD only)
     if run_type != "📊 Portfolio Digest" and prices:
-        # Build sentiment + trend context for AI
         sym_sentiments = {x["syms"][0]: x["label"] for x in scored if x["syms"]}
         sym_trends = {sym: get_trend(sym) for sym in PORTFOLIO[:8]}
         opps = get_options_opportunities(PORTFOLIO[:8], prices)
         options_section = format_options_section(opps, sym_sentiments, sym_trends, mkt_mood)
         if options_section:
             lines.append(options_section)
+
+        # Reddit sentiment
+        reddit_data = get_reddit_sentiment(PORTFOLIO + WATCHLIST)
+        reddit_section = format_reddit_section(reddit_data)
+        if reddit_section:
+            lines.append(reddit_section)
+
+        # Unusual options flow
+        flow = get_unusual_flow(PORTFOLIO[:8])
+        flow_section = format_flow_section(flow)
+        if flow_section:
+            lines.append(flow_section)
 
     # For intraday runs, skip if no bullish/bearish signals
     if run_type == "📊 Portfolio Digest" and len(positive) == 0 and len(negative) == 0:
