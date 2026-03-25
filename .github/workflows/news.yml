@@ -2,8 +2,8 @@ name: Portfolio News Bot
 
 on:
   schedule:
-    - cron: "0 */2 * * *"   # Every 2 hours
-  workflow_dispatch:          # Manual trigger from GitHub UI
+    - cron: "0 9,11,13,15,17,19,21 * * 1-5"  # Every 2h, 9am-9pm UTC, Mon-Fri only
+  workflow_dispatch:
 
 jobs:
   send-news:
