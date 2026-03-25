@@ -193,24 +193,40 @@ def find_best_call(symbol: str, stock_price: float) -> dict | None:
         return None
 
 
+def is_option_symbol(sym: str) -> bool:
+    """Check if symbol is an option contract (OCC format: TSLA260430C00350000)."""
+    import re
+    return bool(re.search(r'\d{6}[CP]\d{8}', sym))
+
+
 def close_profitable_positions(trade_client: TradingClient) -> list:
-    """Close covered calls that hit 50% profit using unrealized_pl."""
+    """Close covered calls that hit 50% profit."""
     closed = []
     positions = trade_client.get_all_positions()
     for p in positions:
         sym = p.symbol
-        if float(p.qty) >= 0:
+        # Must be short option (negative qty) in OCC format
+        if float(p.qty) >= 0 or not is_option_symbol(sym):
             continue
-        if not any(c.isdigit() for c in sym) or "C" not in sym:
+        # Only calls
+        import re
+        m = re.search(r'\d{6}([CP])', sym)
+        if not m or m.group(1) != "C":
             continue
         try:
-            entry_value = abs(float(p.avg_entry_price)) * abs(float(p.qty)) * 100
-            unrealized_pl = float(p.unrealized_pl)
-            # For short position: profit = positive unrealized_pl
-            if entry_value > 0 and unrealized_pl / entry_value >= PROFIT_TARGET:
-                trade_client.close_position(sym, close_options=ClosePositionRequest(qty=str(abs(int(float(p.qty))))))
-                closed.append(f"✅ Closed `{sym}` at 50% profit | P&L: +${unrealized_pl:.2f}")
-                log_sheets(sym[:4], sym, entry_value, "CLOSED")
+            entry_price = abs(float(p.avg_entry_price))
+            current_price = abs(float(p.current_price))
+            qty = abs(int(float(p.qty)))
+
+            # For short options: profit = (entry - current) / entry
+            # e.g. sold at $1.00, now $0.40 = 60% profit
+            if entry_price > 0:
+                profit_pct = (entry_price - current_price) / entry_price
+                if profit_pct >= PROFIT_TARGET:
+                    trade_client.close_position(sym, close_options=ClosePositionRequest(qty=str(qty)))
+                    profit_dollar = (entry_price - current_price) * qty * 100
+                    closed.append(f"✅ Closed `{sym}` at {profit_pct:.0%} profit | +${profit_dollar:.2f}")
+                    log_sheets(sym[:4], sym, entry_price * qty * 100, "CLOSED")
         except Exception as e:
             closed.append(f"⚠️ Failed to close {sym}: {e}")
     return closed
@@ -220,9 +236,10 @@ def run():
     trade_client = TradingClient(api_key=KEY, secret_key=SECRET, paper=True)
     lines = [f"📞 *Covered Call Engine* — {datetime.now().strftime('%b %d %H:%M')}\n"]
 
-    # Check market hours
+    # Check market hours - exit if closed
     if not is_market_open():
-        lines.append("⏰ Market closed - orders queued for open")
+        print("Market closed - skipping")
+        return
 
     # Step 1: Close profitable positions
     closed = close_profitable_positions(trade_client)
@@ -234,7 +251,7 @@ def run():
     # Step 2: Count open covered calls
     positions = trade_client.get_all_positions()
     open_calls = [p for p in positions
-                  if float(p.qty) < 0 and any(c.isdigit() for c in p.symbol) and "C" in p.symbol]
+                  if float(p.qty) < 0 and is_option_symbol(p.symbol) and "C" in p.symbol]
 
     if len(open_calls) >= MAX_POSITIONS:
         lines.append(f"⏸️ Max {MAX_POSITIONS} positions reached. No new trades.")
