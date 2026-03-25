@@ -1,0 +1,17 @@
+archive/
+logs/
+figures/
+options_wheel.egg-info
+log_analysis.ipynb
+__pycache__/
+
+.venv/
+/venv
+/env
+.env
+
+# Mac stuff
+.DS_Store
+
+# VSCode settings
+.vscode/
