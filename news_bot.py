@@ -145,5 +145,9 @@ if __name__ == "__main__":
             lines.append("\n*👀 Watchlist*")
             lines.extend(fmt(watch_scored[:5]))
 
-    send("\n".join(lines))
-    print(f"✅ Sent: {mkt_mood} | 🟢{len(positive)} 🔴{len(negative)} ⚪{len(neutral)}")
+    # For intraday runs, skip if no bullish/bearish signals
+    if run_type == "📊 Portfolio Digest" and len(positive) == 0 and len(negative) == 0:
+        print("⏭️  No actionable signals - skipping Telegram message")
+    else:
+        send("\n".join(lines))
+        print(f"✅ Sent: {mkt_mood} | 🟢{len(positive)} 🔴{len(negative)} ⚪{len(neutral_filtered)}")
