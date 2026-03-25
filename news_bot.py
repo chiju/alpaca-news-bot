@@ -70,11 +70,40 @@ if __name__ == "__main__":
         send_telegram("📰 No new portfolio news in the last 2 hours.")
         print("No news.")
     else:
-        lines = [f"📰 *Portfolio News* — {datetime.now().strftime('%b %d %H:%M')}\n"]
+        # Score each article
+        scored = []
         for a in articles:
-            syms = " ".join(f"`{s}`" for s in a.symbols if s in SYMBOLS)
-            time = str(a.created_at)[11:16]
+            syms = [s for s in a.symbols if s in SYMBOLS]
+            if not syms:
+                continue
             sentiment = get_sentiment(a.headline)
-            lines.append(f"*{time}* {syms} {sentiment}\n{a.headline}\n[Read]({a.url})\n")
+            scored.append({"syms": syms, "sentiment": sentiment, "headline": a.headline, "url": a.url, "time": str(a.created_at)[11:16]})
+
+        # Group by sentiment
+        positive = [x for x in scored if "🟢" in x["sentiment"]]
+        negative = [x for x in scored if "🔴" in x["sentiment"]]
+        neutral  = [x for x in scored if "⚪"  in x["sentiment"]]
+
+        lines = [f"📊 *Portfolio Digest* — {datetime.now().strftime('%b %d %H:%M')}\n"]
+        lines.append(f"🟢 {len(positive)} positive  🔴 {len(negative)} negative  ⚪ {len(neutral)} neutral\n")
+
+        if positive:
+            lines.append("*🟢 Bullish*")
+            for x in positive:
+                syms = " ".join(f"`{s}`" for s in x["syms"])
+                lines.append(f"• {syms} [{x['headline'][:80]}...]({x['url']})")
+
+        if negative:
+            lines.append("\n*🔴 Bearish*")
+            for x in negative:
+                syms = " ".join(f"`{s}`" for s in x["syms"])
+                lines.append(f"• {syms} [{x['headline'][:80]}...]({x['url']})")
+
+        if neutral:
+            lines.append("\n*⚪ Neutral*")
+            for x in neutral:
+                syms = " ".join(f"`{s}`" for s in x["syms"])
+                lines.append(f"• {syms} [{x['headline'][:80]}...]({x['url']})")
+
         send_telegram("\n".join(lines))
-        print(f"Sent {len(articles)} articles.")
+        print(f"Sent digest: {len(positive)}🟢 {len(negative)}🔴 {len(neutral)}⚪")
