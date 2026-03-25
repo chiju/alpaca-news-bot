@@ -15,13 +15,24 @@ def _conn():
 
 
 def save(symbol: str, label: str, score: float, headline: str = ""):
-    """Save to SQLite and Google Sheets."""
+    """Save to SQLite and Google Sheets - skip if same headline already saved today."""
     ts = datetime.utcnow().isoformat()
-    # SQLite
+    today = ts[:10]
+
     with _conn() as db:
+        # Check if same symbol + headline already saved today
+        exists = db.execute(
+            "SELECT 1 FROM history WHERE symbol=? AND headline=? AND ts LIKE ?",
+            (symbol, headline[:100], f"{today}%")
+        ).fetchone()
+
+        if exists:
+            return  # Skip duplicate
+
         db.execute("INSERT INTO history VALUES (?,?,?,?,?)",
                    (symbol, label, score, headline[:100], ts))
-    # Google Sheets
+
+    # Only append to Sheets if not a duplicate
     _append_to_sheets(symbol, label, score, headline, ts)
 
 

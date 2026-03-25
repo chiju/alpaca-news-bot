@@ -65,7 +65,7 @@ if __name__ == "__main__":
             continue
         seen_urls.add(a.url)
         for sym in syms:
-            save(sym, label, score)
+            save(sym, label, score, a.headline)
         scored.append({"syms": syms, "label": label, "score": score,
                        "headline": a.headline, "url": a.url})
 
@@ -138,7 +138,7 @@ if __name__ == "__main__":
                 continue  # same threshold as portfolio
             seen_watch.add(a.url)
             for sym in syms:
-                save(sym, label, score)  # track history for watchlist too
+                save(sym, label, score, a.headline)
             watch_scored.append({"syms": syms, "label": label, "score": score,
                                   "headline": a.headline, "url": a.url})
         if watch_scored:
