@@ -27,7 +27,7 @@ SYMBOLS = [
     "OKLO","PYPL","LAES","CRWV","DUOL"
 ]
 
-MARKET_SYMBOLS = ["SPY", "QQQ", "VIX", "DIA"]
+MARKET_SYMBOLS = ["SPY", "QQQ", "VIX", "DIA", "IWM", "SQQQ", "TQQQ"]
 
 SENTIMENT_EMOJI = {"positive": "🟢", "negative": "🔴", "neutral": "⚪"}
 
@@ -84,9 +84,13 @@ if __name__ == "__main__":
             elif mkt_syms:
                 market_articles.append((mkt_syms, a))
 
-        # Score portfolio articles
+        # Score portfolio articles - skip noise (crypto/unrelated)
         scored = []
         for syms, a in portfolio_articles:
+            # Skip if headline is clearly not about the stock
+            headline_lower = a.headline.lower()
+            if any(w in headline_lower for w in ["bitcoin", "crypto", "penguins", "nft", "meme"]):
+                continue
             sentiment = get_sentiment(a.headline)
             scored.append({"syms": syms, "sentiment": sentiment, "headline": a.headline, "url": a.url})
 
@@ -128,8 +132,8 @@ if __name__ == "__main__":
                 lines.append(f"• {syms} [{x['headline'][:80]}...]({x['url']})")
 
         if neutral:
-            lines.append("\n*⚪ Neutral*")
-            for x in neutral:
+            lines.append("\n*⚪ Neutral* (FYI)")
+            for x in neutral[:3]:  # max 3 neutral items
                 syms = " ".join(f"`{s}`" for s in x["syms"])
                 lines.append(f"• {syms} [{x['headline'][:80]}...]({x['url']})")
 
