@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Alpaca News Bot — sends portfolio news to Telegram. pip install requests"""
+"""Alpaca News Bot — sends portfolio news with FinBERT sentiment to Telegram."""
 
 import os, requests
 from datetime import datetime, timezone, timedelta
 
-# Load from local env file if running locally
+# Load local env file if running locally
 _env = os.path.expanduser("~/.alpaca/options-paper.env")
 if os.path.exists(_env):
     for line in open(_env):
@@ -17,6 +17,7 @@ ALPACA_KEY     = os.environ["ALPACA_API_KEY"]
 ALPACA_SECRET  = os.environ["ALPACA_SECRET_KEY"]
 TELEGRAM_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 TELEGRAM_CHAT  = os.environ["TELEGRAM_CHAT_ID"]
+HF_TOKEN       = os.environ["HF_TOKEN"]
 
 SYMBOLS = [
     "POET","AMZN","NVDA","UUUU","PLTR","TSLA",
@@ -24,7 +25,10 @@ SYMBOLS = [
     "OKLO","PYPL","LAES","CRWV","DUOL"
 ]
 
-def fetch_news(hours_back=6, limit=20):
+SENTIMENT_EMOJI = {"positive": "🟢", "negative": "🔴", "neutral": "⚪"}
+
+
+def fetch_news(hours_back=2, limit=20):
     start = (datetime.now(timezone.utc) - timedelta(hours=hours_back)).strftime("%Y-%m-%dT%H:%M:%SZ")
     r = requests.get(
         "https://data.alpaca.markets/v1beta1/news",
@@ -35,6 +39,27 @@ def fetch_news(hours_back=6, limit=20):
     r.raise_for_status()
     return r.json().get("news", [])
 
+
+def get_sentiment(headline: str) -> str:
+    """Call HuggingFace FinBERT API for sentiment."""
+    try:
+        r = requests.post(
+            "https://api-inference.huggingface.co/models/ProsusAI/finbert",
+            headers={"Authorization": f"Bearer {HF_TOKEN}"},
+            json={"inputs": headline},
+            timeout=10,
+        )
+        result = r.json()
+        # Returns [[{label, score}, ...]]
+        if isinstance(result, list) and result:
+            top = max(result[0], key=lambda x: x["score"])
+            emoji = SENTIMENT_EMOJI.get(top["label"], "⚪")
+            return f"{emoji} {top['label']} ({top['score']:.0%})"
+    except Exception:
+        pass
+    return "⚪"
+
+
 def send_telegram(text):
     for chunk in [text[i:i+4000] for i in range(0, len(text), 4000)]:
         requests.post(
@@ -43,14 +68,17 @@ def send_telegram(text):
             timeout=10,
         ).raise_for_status()
 
+
 if __name__ == "__main__":
     articles = fetch_news()
     if not articles:
-        send_telegram("📰 No new portfolio news in the last 6 hours.")
+        send_telegram("📰 No new portfolio news in the last 2 hours.")
+        print("No news.")
     else:
         lines = [f"📰 *Portfolio News* — {datetime.now().strftime('%b %d %H:%M')}\n"]
         for a in articles:
             syms = " ".join(f"`{s}`" for s in a["symbols"] if s in SYMBOLS)
-            lines.append(f"*{a['created_at'][11:16]}* {syms}\n{a['headline']}\n[Read]({a['url']})\n")
+            sentiment = get_sentiment(a["headline"])
+            lines.append(f"*{a['created_at'][11:16]}* {syms} {sentiment}\n{a['headline']}\n[Read]({a['url']})\n")
         send_telegram("\n".join(lines))
-    print(f"Sent {len(articles)} articles.")
+        print(f"Sent {len(articles)} articles.")
