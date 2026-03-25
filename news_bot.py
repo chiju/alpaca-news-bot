@@ -27,13 +27,16 @@ SYMBOLS = [
     "OKLO","PYPL","LAES","CRWV","DUOL"
 ]
 
+MARKET_SYMBOLS = ["SPY", "QQQ", "VIX", "DIA"]
+
 SENTIMENT_EMOJI = {"positive": "🟢", "negative": "🔴", "neutral": "⚪"}
 
 
 def fetch_news(hours_back=2):
     client = NewsClient(api_key=ALPACA_KEY, secret_key=ALPACA_SECRET)
     start = datetime.now(timezone.utc) - timedelta(hours=hours_back)
-    req = NewsRequest(symbols=",".join(SYMBOLS), start=start, limit=20, sort="desc")
+    all_symbols = ",".join(SYMBOLS + MARKET_SYMBOLS)
+    req = NewsRequest(symbols=all_symbols, start=start, limit=30, sort="desc")
     response = client.get_news(req)
     return response.data.get("news", [])
 
@@ -70,22 +73,47 @@ if __name__ == "__main__":
         send_telegram("📰 No new portfolio news in the last 2 hours.")
         print("No news.")
     else:
-        # Score each article
-        scored = []
+        # Separate portfolio vs market news
+        portfolio_articles = []
+        market_articles = []
         for a in articles:
-            syms = [s for s in a.symbols if s in SYMBOLS]
-            if not syms:
-                continue
-            sentiment = get_sentiment(a.headline)
-            scored.append({"syms": syms, "sentiment": sentiment, "headline": a.headline, "url": a.url, "time": str(a.created_at)[11:16]})
+            port_syms = [s for s in a.symbols if s in SYMBOLS]
+            mkt_syms  = [s for s in a.symbols if s in MARKET_SYMBOLS]
+            if port_syms:
+                portfolio_articles.append((port_syms, a))
+            elif mkt_syms:
+                market_articles.append((mkt_syms, a))
 
-        # Group by sentiment
+        # Score portfolio articles
+        scored = []
+        for syms, a in portfolio_articles:
+            sentiment = get_sentiment(a.headline)
+            scored.append({"syms": syms, "sentiment": sentiment, "headline": a.headline, "url": a.url})
+
         positive = [x for x in scored if "🟢" in x["sentiment"]]
         negative = [x for x in scored if "🔴" in x["sentiment"]]
         neutral  = [x for x in scored if "⚪"  in x["sentiment"]]
 
         lines = [f"📊 *Portfolio Digest* — {datetime.now().strftime('%b %d %H:%M')}\n"]
-        lines.append(f"🟢 {len(positive)} positive  🔴 {len(negative)} negative  ⚪ {len(neutral)} neutral\n")
+
+        # Overall market section
+        if market_articles:
+            mkt_sentiments = [get_sentiment(a.headline) for _, a in market_articles[:5]]
+            mkt_pos = sum(1 for s in mkt_sentiments if "🟢" in s)
+            mkt_neg = sum(1 for s in mkt_sentiments if "🔴" in s)
+            if mkt_pos > mkt_neg:
+                mkt_mood = "🟢 Bullish"
+            elif mkt_neg > mkt_pos:
+                mkt_mood = "🔴 Bearish"
+            else:
+                mkt_mood = "⚪ Neutral"
+            lines.append(f"*🌍 Market Sentiment:* {mkt_mood}")
+            for _, a in market_articles[:3]:
+                lines.append(f"  • [{a.headline[:70]}...]({a.url})")
+            lines.append("")
+
+        # Portfolio summary
+        lines.append(f"*📈 Portfolio:* 🟢 {len(positive)}  🔴 {len(negative)}  ⚪ {len(neutral)}\n")
 
         if positive:
             lines.append("*🟢 Bullish*")
