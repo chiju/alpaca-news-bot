@@ -15,7 +15,7 @@ jobs:
         with:
           python-version: "3.12"
 
-      - run: pip install requests
+      - run: pip install requests alpaca-py
 
       - run: python news_bot.py
         env:
