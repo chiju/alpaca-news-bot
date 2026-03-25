@@ -20,11 +20,17 @@ def save(symbol: str, label: str, score: float, headline: str = "", url: str = "
     today = ts[:10]
 
     with _conn() as db:
-        # Check if same symbol + headline already saved today
-        exists = db.execute(
-            "SELECT 1 FROM history WHERE symbol=? AND headline=? AND ts LIKE ?",
-            (symbol, headline[:100], f"{today}%")
-        ).fetchone()
+        # Deduplicate by URL - one row per article regardless of how many symbols tagged
+        if url:
+            exists = db.execute(
+                "SELECT 1 FROM history WHERE url=? AND ts LIKE ?",
+                (url, f"{today}%")
+            ).fetchone()
+        else:
+            exists = db.execute(
+                "SELECT 1 FROM history WHERE symbol=? AND headline=? AND ts LIKE ?",
+                (symbol, headline[:100], f"{today}%")
+            ).fetchone()
 
         if exists:
             return  # Skip duplicate
