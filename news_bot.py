@@ -44,10 +44,10 @@ def get_sentiment(headline: str) -> str:
     """Call HuggingFace FinBERT API for sentiment."""
     try:
         r = requests.post(
-            "https://api-inference.huggingface.co/models/ProsusAI/finbert",
+            "https://router.huggingface.co/hf-inference/models/ProsusAI/finbert",
             headers={"Authorization": f"Bearer {HF_TOKEN}"},
             json={"inputs": headline},
-            timeout=10,
+            timeout=15,
         )
         result = r.json()
         # Returns [[{label, score}, ...]]
