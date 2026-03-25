@@ -17,6 +17,8 @@ from fetcher import get_news, get_price_changes
 from sentiment import get_sentiment, generate_summary
 from history import save, get_trend
 from notifier import send
+from options import get_options_opportunities, format_options_section
+from journal import sync_trades
 
 PORTFOLIO = [
     "POET","AMZN","NVDA","UUUU","PLTR","TSLA",
@@ -144,6 +146,20 @@ if __name__ == "__main__":
         if watch_scored:
             lines.append("\n*👀 Watchlist*")
             lines.extend(fmt(watch_scored[:5]))
+
+    # Auto-sync trade journal on morning run
+    if run_type == "🌅 Morning Digest":
+        sync_trades()
+
+    # Options opportunities (morning + EOD only)
+    if run_type != "📊 Portfolio Digest" and prices:
+        # Build sentiment + trend context for AI
+        sym_sentiments = {x["syms"][0]: x["label"] for x in scored if x["syms"]}
+        sym_trends = {sym: get_trend(sym) for sym in PORTFOLIO[:8]}
+        opps = get_options_opportunities(PORTFOLIO[:8], prices)
+        options_section = format_options_section(opps, sym_sentiments, sym_trends, mkt_mood)
+        if options_section:
+            lines.append(options_section)
 
     # For intraday runs, skip if no bullish/bearish signals
     if run_type == "📊 Portfolio Digest" and len(positive) == 0 and len(negative) == 0:
