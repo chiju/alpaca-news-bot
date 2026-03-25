@@ -2,13 +2,64 @@
 
 AI-powered portfolio news digest sent to Telegram. Monitors your stock portfolio and watchlist for news, analyzes sentiment using FinBERT, and sends structured alerts automatically.
 
-## What It Does
+## Architecture
 
-- **Fetches news** from Alpaca (Benzinga source) for your portfolio + watchlist
-- **Analyzes sentiment** using FinBERT (financial AI model) — positive/negative/neutral
-- **Tracks sentiment history** per stock in local SQLite DB
-- **Generates 4-line summary** using Llama 3.1 8B via HuggingFace
-- **Sends to Telegram** as a structured digest with market + portfolio breakdown
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     GitHub Actions (Scheduler)                  │
+│  🌅 8am ET (18hrs)  │  📊 Every 2hrs  │  🌆 4pm ET (9hrs)      │
+└────────────────────────────┬────────────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                        news_bot.py                              │
+│                    (Main Orchestrator)                          │
+└──────┬──────────────┬──────────────┬──────────────┬────────────┘
+       │              │              │              │
+       ▼              ▼              ▼              ▼
+┌──────────┐  ┌──────────────┐  ┌─────────┐  ┌──────────┐
+│fetcher.py│  │ sentiment.py │  │history.py│  │notifier.py│
+│          │  │              │  │          │  │           │
+│ Alpaca   │  │  FinBERT     │  │ SQLite   │  │ Telegram  │
+│ News API │  │  (HuggingFace│  │  + Git   │  │   Bot     │
+│ + Prices │  │   Router)    │  │  + Google│  │           │
+│          │  │              │  │  Sheets  │  │           │
+└──────────┘  │  Llama 3.1   │  └──────────┘  └──────────┘
+              │  (Summary)   │
+              └──────────────┘
+```
+
+## Data Flow
+
+```
+Benzinga News
+     │
+     ▼
+Alpaca News API ──► fetcher.py ──► Filter noise & deduplicate
+                                         │
+                          ┌──────────────┼──────────────┐
+                          ▼              ▼              ▼
+                    Market ETFs    Portfolio (17)   Watchlist
+                   SPY/QQQ/TLT    stocks            MSFT...
+                          │              │
+                          ▼              ▼
+                    sentiment.py ◄───────┘
+                          │
+                    FinBERT scores each headline
+                    🟢 positive / 🔴 negative / ⚪ neutral
+                          │
+                    Filter: score < 70% → skip
+                          │
+                    Llama 3.1 → 4-line summary
+                          │
+                    history.py
+                    ├── SQLite (local + committed to repo)
+                    └── Google Sheets (visualization)
+                          │
+                    notifier.py
+                          │
+                    Telegram Message
+```
 
 ## Digest Format
 
@@ -27,32 +78,74 @@ AI-powered portfolio news digest sent to Telegram. Monitors your stock portfolio
 📈 Portfolio: 🟢 2  🔴 1  ⚪ 0
 
 🟢 Bullish
-• `META` (92%) 🟢🟢⚪  [Meta AI Shopping...]
+• `META` 📈+1.2% (92%) 🟢🟢⚪  [Meta AI Shopping...]
 
 🔴 Bearish
-• `TSLA` (90%) 🔴⚪🔴  [SpaceX-Tesla merger caution...]
+• `TSLA` 📉-0.8% (90%) 🔴⚪🔴  [SpaceX-Tesla merger caution...]
 
 👀 Watchlist
 • `MSFT` (85%) 🟢⚪⚪  [Microsoft AI supercycle...]
 ```
 
+## Components
+
+| File | Role | External Service |
+|------|------|-----------------|
+| `news_bot.py` | Orchestrator - runs the pipeline | - |
+| `fetcher.py` | Fetches news + price data | Alpaca API |
+| `sentiment.py` | FinBERT sentiment + Llama summary | HuggingFace |
+| `history.py` | Saves + retrieves sentiment history | SQLite + Google Sheets |
+| `notifier.py` | Sends Telegram messages | Telegram Bot API |
+| `setup_sheets.py` | One-time Google Sheet header setup | Google Sheets API |
+
+## Intelligence Layer
+
+```
+FinBERT (ProsusAI)          Llama 3.1 8B
+─────────────────           ────────────────
+Financial NLP model         General LLM
+Trained on:                 Used for:
+- Earnings reports          - 4-line digest summary
+- Analyst notes             - Natural language output
+- Financial news
+
+Input: headline/summary     Input: scored results
+Output: positive/negative/  Output: human-readable
+        neutral + score             briefing
+```
+
+## Filters & Logic
+
+```
+Raw news articles
+      │
+      ├── Skip if score < 70% confidence
+      ├── Skip noise: bitcoin, crypto, nft, meme
+      ├── Deduplicate by URL
+      ├── Skip neutral if symbol already in bullish/bearish
+      └── Watchlist: same filters as portfolio
+```
+
+## Persistence
+
+```
+Every run:
+  sentiment_history.db (SQLite)
+       ├── Stored in Git repo (permanent)
+       └── Committed back after each run
+
+  Google Sheets
+       └── Append row: Date | Time | Symbol | Sentiment | Score | Headline
+           → Use for charts, graphs, trend analysis
+```
+
 ## Schedule (GitHub Actions)
 
-| Time (UTC) | ET | Type |
-|---|---|---|
-| 12:00 Mon-Fri | 8am | 🌅 Morning Digest (18hrs of news) |
-| 9,11,13,15,17,19 Mon-Fri | Intraday | 📊 2-hour update |
-| 21:00 Mon-Fri | 4pm | 🌆 End of Day Digest (9hrs) |
-
-## Modules
-
-| File | Purpose |
-|------|---------|
-| `news_bot.py` | Main orchestrator |
-| `fetcher.py` | Alpaca news + price data |
-| `sentiment.py` | FinBERT + Llama summary |
-| `history.py` | Sentiment trend (SQLite) |
-| `notifier.py` | Telegram sender |
+| UTC | ET | Type | News window |
+|-----|-----|------|-------------|
+| 12:00 Mon-Fri | 8am | 🌅 Morning | Last 18hrs |
+| 9,11,13,15,17,19 Mon-Fri | Intraday | 📊 Update | Last 2hrs |
+| 21:00 Mon-Fri | 4pm | 🌆 End of Day | Last 9hrs |
 
 ## Setup
 
@@ -61,6 +154,8 @@ AI-powered portfolio news digest sent to Telegram. Monitors your stock portfolio
    - `ALPACA_API_KEY` / `ALPACA_SECRET_KEY`
    - `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID`
    - `HF_TOKEN` (HuggingFace free token)
+   - `GOOGLE_CREDENTIALS` (service account JSON)
+   - `GOOGLE_SHEET_ID`
 3. GitHub Actions runs automatically
 
 ## Local Run
