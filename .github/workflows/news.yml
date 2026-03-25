@@ -2,7 +2,9 @@ name: Portfolio News Bot
 
 on:
   schedule:
-    - cron: "0 9,11,13,15,17,19,21 * * 1-5"  # Every 2h, 9am-9pm UTC, Mon-Fri only
+    - cron: "0 12 * * 1-5"                # Morning digest 8am ET
+    - cron: "0 9,11,13,15,17,19 * * 1-5"  # Every 2h intraday
+    - cron: "0 21 * * 1-5"                # EOD digest 4pm ET
   workflow_dispatch:
 
 jobs:
@@ -15,7 +17,7 @@ jobs:
         with:
           python-version: "3.12"
 
-      - run: pip install requests alpaca-py
+      - run: pip install requests alpaca-py google-api-python-client google-auth
 
       - run: python news_bot.py
         env:
@@ -23,3 +25,14 @@ jobs:
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+
+      - name: Commit sentiment history DB
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add sentiment_history.db
+          git diff --staged --quiet || git commit -m "Update sentiment history [skip ci]"
+          git push
