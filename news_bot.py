@@ -37,11 +37,13 @@ if __name__ == "__main__":
     # Detect run type based on UTC hour
     utc_hour = datetime.utcnow().hour
     if utc_hour == 12:
-        hours_back, run_type = 18, "🌅 Morning Digest"   # overnight news
+        hours_back, run_type = 18, "🌅 Morning Digest"    # overnight news
+    elif utc_hour == 17:
+        hours_back, run_type = 5,  "📊 Midday Digest"     # morning session
     elif utc_hour == 21:
-        hours_back, run_type = 9, "🌆 End of Day Digest"  # full trading day
+        hours_back, run_type = 9,  "🌆 End of Day Digest" # full trading day
     else:
-        hours_back, run_type = 2, "📊 Portfolio Digest"   # intraday update
+        hours_back, run_type = 4,  "📊 Portfolio Digest"  # manual/fallback
     # 1. Fetch data
     market_news    = get_news(MARKET_ETFS, hours_back)
     portfolio_news = get_news(PORTFOLIO, hours_back)
@@ -106,10 +108,10 @@ if __name__ == "__main__":
             syms_str = " ".join(f"`{s}`" for s in x["syms"])
             price_str = ""
             for s in x["syms"]:
-                if s in prices and prices[s] != 0.0:
+                if s in prices and abs(prices[s]) >= 0.1:  # hide if < 0.1%
                     p = prices[s]
                     price_str = f" {'📈' if p > 0 else '📉'}{p:+.1f}%"
-                    break  # only show price for first matched symbol
+                    break
             trend = get_trend(x["syms"][0], last_n=3)  # max 3
             conf = f"({x['score']:.0%})"
             out.append(f"• {syms_str}{price_str} {conf} {trend}\n  [{x['headline'][:75]}...]({x['url']})")
@@ -142,7 +144,7 @@ if __name__ == "__main__":
                 continue  # same threshold as portfolio
             seen_watch.add(a.url)
             for sym in syms:
-                save(sym, label, score, a.headline, a.url)
+                save(sym, label, score, a.headline, a.url, dedup_key=f"w:{sym}:{a.url}")
             watch_scored.append({"syms": syms, "label": label, "score": score,
                                   "headline": a.headline, "url": a.url})
         if watch_scored:

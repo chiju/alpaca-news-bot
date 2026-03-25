@@ -2,9 +2,10 @@ name: Portfolio News Bot
 
 on:
   schedule:
-    - cron: "0 12 * * 1-5"                # Morning digest 8am ET
-    - cron: "0 9,11,13,15,17,19 * * 1-5"  # Every 2h intraday
-    - cron: "0 21 * * 1-5"                # EOD digest 4pm ET
+    - cron: "0 12 * * 1-5"                # 🌅 Morning digest 8am ET
+    - cron: "0 17 * * 1-5"                # 📊 Midday digest 12pm ET
+    - cron: "0 21 * * 1-5"                # 🌆 EOD digest 4pm ET
+    - cron: "0 13,15,17,19,21 * * 1-5"    # ⚙️ Covered call engine every 2hrs
   workflow_dispatch:
 
 jobs:
@@ -22,7 +23,12 @@ jobs:
 
       - run: pip install -r requirements.txt
 
-      - name: Run news digest
+      - name: Run news digest (morning, midday, EOD only)
+        if: >
+          github.event.schedule == '0 12 * * 1-5' ||
+          github.event.schedule == '0 17 * * 1-5' ||
+          github.event.schedule == '0 21 * * 1-5' ||
+          github.event_name == 'workflow_dispatch'
         run: python news_bot.py
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
@@ -33,8 +39,7 @@ jobs:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
           GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
 
-      - name: Run covered call engine (morning + manual only)
-        if: github.event.schedule == '0 12 * * 1-5' || github.event_name == 'workflow_dispatch'
+      - name: Run covered call engine (every 2hrs during market hours)
         run: python covered_call_engine.py
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}

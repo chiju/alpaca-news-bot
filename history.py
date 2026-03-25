@@ -14,17 +14,17 @@ def _conn():
     return db
 
 
-def save(symbol: str, label: str, score: float, headline: str = "", url: str = ""):
-    """Save to SQLite and Google Sheets - skip if same headline already saved today."""
-    ts = datetime.utcnow().isoformat()  # store UTC
+def save(symbol: str, label: str, score: float, headline: str = "", url: str = "", dedup_key: str = ""):
+    """Save to SQLite and Google Sheets."""
+    ts = datetime.utcnow().isoformat()
     today = ts[:10]
+    key = dedup_key or url
 
     with _conn() as db:
-        # Deduplicate by URL - one row per article regardless of how many symbols tagged
-        if url:
+        if key:
             exists = db.execute(
                 "SELECT 1 FROM history WHERE url=? AND ts LIKE ?",
-                (url, f"{today}%")
+                (key, f"{today}%")
             ).fetchone()
         else:
             exists = db.execute(
@@ -33,13 +33,12 @@ def save(symbol: str, label: str, score: float, headline: str = "", url: str = "
             ).fetchone()
 
         if exists:
-            return  # Skip duplicate
+            return
 
         db.execute("INSERT INTO history VALUES (?,?,?,?,?,?)",
-                   (symbol, label, score, headline[:100], url, ts))
+                   (symbol, label, score, headline[:100], key, ts))
 
-    # Only append to Sheets if not a duplicate
-    _append_to_sheets(symbol, label, score, headline, url, ts)
+    _append_to_sheets(symbol, label, score, headline, url, ts)  # real url for display
 
 
 def get_trend(symbol: str, last_n: int = 3) -> str:
