@@ -77,14 +77,19 @@ if __name__ == "__main__":
 
     def fmt(items):
         out = []
+        seen_headlines = set()
         for x in items:
+            if x["headline"] in seen_headlines:
+                continue
+            seen_headlines.add(x["headline"])
             syms_str = " ".join(f"`{s}`" for s in x["syms"])
             price_str = ""
             for s in x["syms"]:
                 if s in prices and prices[s] != 0.0:
                     p = prices[s]
                     price_str = f" {'📈' if p > 0 else '📉'}{p:+.1f}%"
-            trend = get_trend(x["syms"][0])
+                    break  # only show price for first matched symbol
+            trend = get_trend(x["syms"][0], last_n=3)  # max 3
             conf = f"({x['score']:.0%})"
             out.append(f"• {syms_str}{price_str} {conf} {trend}\n  [{x['headline'][:75]}...]({x['url']})")
         return out
