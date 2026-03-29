@@ -50,9 +50,13 @@ AI-powered portfolio news digest + automated options trading strategies.
 ✅ Sentiment trend dots (🟢🔴⚪)      🔲 Email/WhatsApp alerts
 ✅ Wheel strategy (CSP + CC)          🔲 Portfolio rebalancing
 ✅ CSP strategy (separate account)    🔲 Tax lot tracking
-✅ Sentiment filter (blocks -85%)     🔲 Options Greeks dashboard
-✅ Daily P&L report                   🔲 Earnings calendar integration
-✅ GitHub Actions automation          🔲 Macro event alerts (Fed, CPI)
+✅ Bull Put Spread strategy           🔲 Options Greeks dashboard
+✅ Iron Condor strategy               🔲 Earnings calendar integration
+✅ Covered Call strategy              🔲 Macro event alerts (Fed, CPI)
+✅ 5 isolated paper accounts          🔲 Backtesting engine
+✅ Sentiment filter (blocks -85%)     🔲 Win rate / Sharpe ratio dashboard
+✅ Daily P&L report                   🔲 Live trading (after 4-5mo paper)
+✅ GitHub Actions automation          🔲 Multi-strategy performance compare
 ✅ Per-symbol blocking                🔲 Cloud deployment (post-validation)
 ✅ Modular strategy architecture
 ```
