@@ -1,65 +1,42 @@
-name: Portfolio News Bot
+name: Portfolio Bot
 
 on:
   schedule:
-    - cron: "0 12 * * 1-5"                # 🌅 Morning digest 8am ET
-    - cron: "0 17 * * 1-5"                # 📊 Midday digest 12pm ET
-    - cron: "0 21 * * 1-5"                # 🌆 EOD digest 4pm ET
-    - cron: "0 13,15,17,19,21 * * 1-5"    # ⚙️ Covered call engine every 2hrs
+    - cron: "0 12 * * 1-5"              # 🌅 Morning digest 8am ET
+    - cron: "0 17 * * 1-5"              # 📊 Midday digest 12pm ET
+    - cron: "0 21 * * 1-5"              # 🌆 EOD digest 4pm ET
+    - cron: "0 13 * * 1-5"              # ⚙️ Open new positions at market open
+    - cron: "*/30 13-21 * * 1-5"        # ⚙️ Check exits every 30min
   workflow_dispatch:
 
+env:
+  TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+  TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+  HF_TOKEN: ${{ secrets.HF_TOKEN }}
+  GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+  GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+
 jobs:
-  send-news:
+  news-digest:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    if: >
+      github.event.schedule == '0 12 * * 1-5' ||
+      github.event.schedule == '0 17 * * 1-5' ||
+      github.event.schedule == '0 21 * * 1-5' ||
+      github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: "pip"
-
       - run: pip install -r requirements.txt
-
-      - name: Run news digest (morning, midday, EOD only)
-        if: >
-          github.event.schedule == '0 12 * * 1-5' ||
-          github.event.schedule == '0 17 * * 1-5' ||
-          github.event.schedule == '0 21 * * 1-5' ||
-          github.event_name == 'workflow_dispatch'
-        run: python news_bot.py
+      - run: python news_bot.py
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
-          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
-
-      - name: Run covered call engine (every 2hrs during market hours)
-        run: python covered_call_engine.py
-        env:
-          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
-          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
-          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
-
-      - name: Run bull put spread engine (every 2hrs during market hours)
-        run: python bull_put_spread_engine.py
-        env:
-          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
-          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
-          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
-
       - name: Commit sentiment history DB
         run: |
           git config user.name "github-actions[bot]"
@@ -67,3 +44,35 @@ jobs:
           git add sentiment_history.db
           git diff --staged --quiet || git commit -m "Update sentiment history [skip ci]"
           git push
+
+  trading-engines:
+    runs-on: ubuntu-latest
+    if: >
+      github.event.schedule == '0 13 * * 1-5' ||
+      github.event.schedule == '*/30 13-21 * * 1-5' ||
+      github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - run: pip install -r requirements.txt
+
+      - name: Covered Call Engine
+        run: python run_strategy.py --strategy covered_call
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+
+      - name: Bull Put Spread Engine
+        run: python run_strategy.py --strategy bull_put
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+
+      - name: CSP Engine
+        run: python run_strategy.py --strategy csp
+        env:
+          ALPACA_CSP_API_KEY: ${{ secrets.ALPACA_CSP_API_KEY }}
+          ALPACA_CSP_SECRET_KEY: ${{ secrets.ALPACA_CSP_SECRET_KEY }}

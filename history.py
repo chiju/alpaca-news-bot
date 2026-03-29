@@ -10,6 +10,14 @@ def _conn():
     db.execute("""CREATE TABLE IF NOT EXISTS history (
         symbol TEXT, label TEXT, score REAL, headline TEXT, url TEXT, ts TEXT
     )""")
+    # Auto-migrate: add new columns if they don't exist
+    existing = {row[1] for row in db.execute("PRAGMA table_info(history)")}
+    migrations = {
+        "source": "TEXT DEFAULT 'benzinga'",
+    }
+    for col, definition in migrations.items():
+        if col not in existing:
+            db.execute(f"ALTER TABLE history ADD COLUMN {col} {definition}")
     db.commit()
     return db
 
@@ -35,8 +43,8 @@ def save(symbol: str, label: str, score: float, headline: str = "", url: str = "
         if exists:
             return
 
-        db.execute("INSERT INTO history VALUES (?,?,?,?,?,?)",
-                   (symbol, label, score, headline[:100], key, ts))
+        db.execute("INSERT INTO history VALUES (?,?,?,?,?,?,?)",
+                   (symbol, label, score, headline[:100], key, ts, "benzinga"))
 
     _append_to_sheets(symbol, label, score, headline, url, ts)  # real url for display
 
