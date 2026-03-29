@@ -2,6 +2,93 @@
 
 AI-powered portfolio news digest + automated options trading strategies.
 
+## System Overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     ALPACA PORTFOLIO BOT                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  📰 NEWS INTELLIGENCE          🤖 TRADING ENGINE               │
+│  ─────────────────             ──────────────────              │
+│  Alpaca News API               run_strategy.py                 │
+│       ↓                              ↓                         │
+│  FinBERT Sentiment             ┌─────┴──────┐                  │
+│  (🟢🔴⚪ per headline)         │            │                  │
+│       ↓                      WHEEL        CSP                  │
+│  Llama 3.1 Summary          Strategy    Strategy               │
+│       ↓                    ($980k acct) ($100k acct)           │
+│  Reddit Buzz                    ↓            ↓                 │
+│       ↓                   Sentiment    BaseStrategy            │
+│  Options Flow               Filter      (rules engine)         │
+│       ↓                        ↓            ↓                  │
+│  Telegram Digest           Alpaca Paper Trading                │
+│  (3x/day)                                                      │
+│                                                                 │
+│  📊 HISTORY & REPORTING        🛡️ RISK MANAGEMENT              │
+│  ──────────────────            ──────────────────              │
+│  SQLite (local)                Max 20% per trade               │
+│  Google Sheets (cloud)         Max 5 positions                 │
+│  Sentiment trends (🟢🔴⚪)     2% daily loss limit             │
+│  Daily P&L Report              50% profit target               │
+│  (4pm ET → Telegram)           2x stop loss                    │
+│                                7-day expiry close              │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## Feature Status
+
+```
+✅ BUILT & WORKING                    🔲 TODO
+──────────────────                    ──────
+✅ News digest (3x/day)               🔲 strategies/covered_call.py
+✅ FinBERT sentiment analysis         🔲 strategies/bull_put.py
+✅ Llama 3.1 AI summary               🔲 Backtesting engine
+✅ Reddit sentiment tracking          🔲 Win rate / Sharpe ratio dashboard
+✅ Unusual options flow               🔲 Live trading (after 4-5mo paper)
+✅ Google Sheets history              🔲 Multi-strategy performance compare
+✅ Sentiment trend dots (🟢🔴⚪)      🔲 Email/WhatsApp alerts
+✅ Wheel strategy (CSP + CC)          🔲 Portfolio rebalancing
+✅ CSP strategy (separate account)    🔲 Tax lot tracking
+✅ Sentiment filter (blocks -85%)     🔲 Options Greeks dashboard
+✅ Daily P&L report                   🔲 Earnings calendar integration
+✅ GitHub Actions automation          🔲 Macro event alerts (Fed, CPI)
+✅ Per-symbol blocking                🔲 Cloud deployment (post-validation)
+✅ Modular strategy architecture
+```
+
+## Data Flow
+
+```
+Every 30min (market hours):
+─────────────────────────
+Alpaca News → FinBERT → SQLite/Sheets
+                ↓
+         Sentiment DB
+                ↓
+    run_strategy.py checks DB
+                ↓
+    Block stocks with >85% negative
+                ↓
+    Execute wheel/CSP on clean stocks
+                ↓
+    Telegram notification
+
+3x/day (8am, 12pm, 4pm ET):
+────────────────────────────
+News + Reddit + Options Flow
+         ↓
+    FinBERT scores
+         ↓
+    Llama summary
+         ↓
+    Telegram digest
+
+4pm ET daily:
+─────────────
+Both accounts → P&L report → Telegram
+```
+
 ## Architecture
 
 ```
