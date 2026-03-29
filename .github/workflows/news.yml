@@ -89,3 +89,21 @@ jobs:
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+
+      - name: Bull Put Spread
+        run: python run_strategy.py --strategy bull_put
+        env:
+          ALPACA_BULL_PUT_SPREAD_API_KEY: ${{ secrets.ALPACA_BULL_PUT_SPREAD_API_KEY }}
+          ALPACA_BULL_PUT_SPREAD_SECRET_KEY: ${{ secrets.ALPACA_BULL_PUT_SPREAD_SECRET_KEY }}
+
+      - name: Iron Condor
+        run: python run_strategy.py --strategy iron_condor
+        env:
+          ALPACA_IRON_CONDOR_API_KEY: ${{ secrets.ALPACA_IRON_CONDOR_API_KEY }}
+          ALPACA_IRON_CONDOR_SECRET_KEY: ${{ secrets.ALPACA_IRON_CONDOR_SECRET_KEY }}
+
+      - name: Covered Call
+        run: python run_strategy.py --strategy covered_call
+        env:
+          ALPACA_COVERED_CALL_API_KEY: ${{ secrets.ALPACA_COVERED_CALL_API_KEY }}
+          ALPACA_COVERED_CALL_SECRET_KEY: ${{ secrets.ALPACA_COVERED_CALL_SECRET_KEY }}

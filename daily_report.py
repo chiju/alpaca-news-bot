@@ -17,7 +17,13 @@ if os.path.exists(_env):
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 CHAT  = os.environ.get("TELEGRAM_CHAT_ID", "")
 
-ACCOUNTS = {"wheel": "options-paper", "csp": "csp"}
+ACCOUNTS = {
+    "wheel":        "options-paper",
+    "csp":          "csp",
+    "bull-put":     "bull-put-spread",
+    "iron-condor":  "iron-condor",
+    "covered-call": "covered-call",
+}
 
 
 def notify(msg):

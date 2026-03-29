@@ -36,7 +36,7 @@ def get_blocked_symbols(db_path: str) -> set:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--strategy", required=True,
-                        choices=["csp", "wheel", "covered_call", "bull_put"])
+                        choices=["csp", "wheel", "covered_call", "bull_put", "iron_condor"])
     args = parser.parse_args()
 
     cfg = load_account(args.strategy)
@@ -88,6 +88,10 @@ def main():
     elif args.strategy == "bull_put":
         from strategies.bull_put import BullPutSpread
         results = BullPutSpread(broker).run()
+
+    elif args.strategy == "iron_condor":
+        from strategies.iron_condor import IronCondor
+        results = IronCondor(broker).run()
 
     msg = header + "\n".join(results)
     notify(cfg["telegram_token"], cfg["telegram_chat"], msg)
