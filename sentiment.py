@@ -1,8 +1,10 @@
 """FinBERT sentiment + Llama summary via HuggingFace."""
 import os, requests
 
-HF_TOKEN = os.environ["HF_TOKEN"]
 EMOJI = {"positive": "🟢", "negative": "🔴", "neutral": "⚪"}
+
+def _hf():
+    return os.environ.get("HF_TOKEN", "")
 
 
 def get_sentiment(text: str) -> tuple[str, float]:
@@ -10,7 +12,7 @@ def get_sentiment(text: str) -> tuple[str, float]:
     try:
         r = requests.post(
             "https://router.huggingface.co/hf-inference/models/ProsusAI/finbert",
-            headers={"Authorization": f"Bearer {HF_TOKEN}"},
+            headers={"Authorization": f"Bearer {_hf()}"},
             json={"inputs": text[:200]},
             timeout=15,
         )
@@ -38,7 +40,7 @@ Keep each line under 12 words. No headers, no labels, just 4 plain lines."""
     try:
         r = requests.post(
             "https://router.huggingface.co/novita/v3/openai/chat/completions",
-            headers={"Authorization": f"Bearer {HF_TOKEN}"},
+            headers={"Authorization": f"Bearer {_hf()}"},
             json={"model": "meta-llama/llama-3.1-8b-instruct",
                   "messages": [{"role": "user", "content": prompt}],
                   "max_tokens": 120},

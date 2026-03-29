@@ -4,8 +4,8 @@ from datetime import datetime, timedelta
 from alpaca.data.historical import OptionHistoricalDataClient
 from alpaca.data.requests import OptionChainRequest
 
-KEY    = os.environ["ALPACA_API_KEY"]
-SECRET = os.environ["ALPACA_SECRET_KEY"]
+def _key():    return os.environ.get("ALPACA_API_KEY", "")
+def _secret(): return os.environ.get("ALPACA_SECRET_KEY", "")
 
 # Unusual = volume > open_interest * threshold
 UNUSUAL_THRESHOLD = 2.0   # 2x open interest = unusual
@@ -17,7 +17,7 @@ def get_unusual_flow(symbols: list) -> list:
     Returns list of unusual options activity:
     [{"symbol", "contract", "type", "strike", "expiry", "volume", "oi", "ratio", "premium", "side"}]
     """
-    client = OptionHistoricalDataClient(api_key=KEY, secret_key=SECRET)
+    client = OptionHistoricalDataClient(api_key=_key(), secret_key=_secret())
     unusual = []
 
     for sym in symbols:
