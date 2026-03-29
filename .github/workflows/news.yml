@@ -59,20 +59,14 @@ jobs:
           cache: "pip"
       - run: pip install -r requirements.txt
 
-      - name: Covered Call Engine
-        run: python run_strategy.py --strategy covered_call
-        env:
-          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
-          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
-
-      - name: Bull Put Spread Engine
-        run: python run_strategy.py --strategy bull_put
-        env:
-          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
-          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
-
       - name: CSP Engine
         run: python run_strategy.py --strategy csp
         env:
           ALPACA_CSP_API_KEY: ${{ secrets.ALPACA_CSP_API_KEY }}
           ALPACA_CSP_SECRET_KEY: ${{ secrets.ALPACA_CSP_SECRET_KEY }}
+
+      - name: Wheel Strategy
+        run: python run_strategy.py --strategy wheel
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
