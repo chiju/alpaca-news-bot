@@ -19,6 +19,9 @@ class CoveredCall(BaseStrategy):
                  if not re.search(r'\d{6}[CP]\d{8}', p.symbol)
                  and int(float(p.qty)) >= 100}
 
+        if not owned:
+            return []  # No 100-share positions, nothing to do
+
         # Skip if already have a call on this stock
         open_calls = {re.match(r'([A-Z]+)', p.symbol).group(1)
                       for p in positions

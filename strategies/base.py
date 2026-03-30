@@ -83,6 +83,8 @@ class BaseStrategy(ABC):
 
         # Open entries
         account_value = float(account.portfolio_value)
+        if not self.symbols:
+            return results
         prices = self.broker.latest_prices(self.symbols)
         open_syms = {p.symbol[:4] for p in open_opts}
 
