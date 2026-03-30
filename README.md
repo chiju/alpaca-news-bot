@@ -13,17 +13,18 @@ AI-powered portfolio news digest + automated options trading strategies.
 │  ─────────────────             ──────────────────              │
 │  Alpaca News API               run_strategy.py                 │
 │       ↓                              ↓                         │
-│  FinBERT Sentiment             ┌─────┴──────┐                  │
-│  (🟢🔴⚪ per headline)         │            │                  │
-│       ↓                      WHEEL        CSP                  │
-│  Llama 3.1 Summary          Strategy    Strategy               │
-│       ↓                    ($980k acct) ($100k acct)           │
-│  Reddit Buzz                    ↓            ↓                 │
-│       ↓                   Sentiment    BaseStrategy            │
-│  Options Flow               Filter      (rules engine)         │
-│       ↓                        ↓            ↓                  │
-│  Telegram Digest           Alpaca Paper Trading                │
-│  (3x/day)                                                      │
+│  FinBERT Sentiment        ┌──────────┼──────────┐              │
+│  (🟢🔴⚪ per headline)    │          │          │              │
+│       ↓                 WHEEL      CSP      BULL PUT           │
+│  Llama 3.1 Summary    ($980k)   ($100k)    ($100k)             │
+│       ↓                          │                             │
+│  Reddit Buzz              IRON CONDOR  COVERED CALL            │
+│       ↓                    ($100k)       ($100k)               │
+│  Options Flow                    ↓                             │
+│       ↓                   Sentiment Filter                     │
+│  Telegram Digest          (blocks -85% negative)               │
+│  (3x/day)                        ↓                             │
+│                           Alpaca Paper Trading                 │
 │                                                                 │
 │  📊 HISTORY & REPORTING        🛡️ RISK MANAGEMENT              │
 │  ──────────────────            ──────────────────              │
@@ -41,23 +42,23 @@ AI-powered portfolio news digest + automated options trading strategies.
 ```
 ✅ BUILT & WORKING                    🔲 TODO
 ──────────────────                    ──────
-✅ News digest (3x/day)               🔲 strategies/covered_call.py
-✅ FinBERT sentiment analysis         🔲 strategies/bull_put.py
-✅ Llama 3.1 AI summary               🔲 Backtesting engine
-✅ Reddit sentiment tracking          🔲 Win rate / Sharpe ratio dashboard
-✅ Unusual options flow               🔲 Live trading (after 4-5mo paper)
-✅ Google Sheets history              🔲 Multi-strategy performance compare
-✅ Sentiment trend dots (🟢🔴⚪)      🔲 Email/WhatsApp alerts
-✅ Wheel strategy (CSP + CC)          🔲 Portfolio rebalancing
-✅ CSP strategy (separate account)    🔲 Tax lot tracking
-✅ Bull Put Spread strategy           🔲 Options Greeks dashboard
-✅ Iron Condor strategy               🔲 Earnings calendar integration
-✅ Covered Call strategy              🔲 Macro event alerts (Fed, CPI)
-✅ 5 isolated paper accounts          🔲 Backtesting engine
-✅ Sentiment filter (blocks -85%)     🔲 Win rate / Sharpe ratio dashboard
-✅ Daily P&L report                   🔲 Live trading (after 4-5mo paper)
-✅ GitHub Actions automation          🔲 Multi-strategy performance compare
-✅ Per-symbol blocking                🔲 Cloud deployment (post-validation)
+✅ News digest (3x/day)               🔲 Backtesting engine
+✅ FinBERT sentiment analysis         🔲 Win rate / Sharpe ratio dashboard
+✅ Llama 3.1 AI summary               🔲 Live trading (after 4-5mo paper)
+✅ Reddit sentiment tracking          🔲 Multi-strategy performance compare
+✅ Unusual options flow               🔲 Email/WhatsApp alerts
+✅ Google Sheets history              🔲 Portfolio rebalancing
+✅ Sentiment trend dots (🟢🔴⚪)      🔲 Tax lot tracking
+✅ Wheel strategy (CSP + CC)          🔲 Options Greeks dashboard
+✅ CSP strategy (separate account)    🔲 Earnings calendar integration
+✅ Bull Put Spread strategy           🔲 Macro event alerts (Fed, CPI)
+✅ Iron Condor strategy               🔲 Cloud deployment (post-validation)
+✅ Covered Call strategy
+✅ 5 isolated paper accounts
+✅ Sentiment filter (blocks -85%)
+✅ Daily P&L report
+✅ GitHub Actions automation
+✅ Per-symbol blocking
 ✅ Modular strategy architecture
 ```
 
