@@ -34,8 +34,15 @@ def load_account(strategy: str) -> dict:
     for k, v in env_vars.items():
         os.environ[k] = v
 
-    # Also check GitHub Secrets prefix
-    prefix = f"ALPACA_{strategy.upper().replace('-', '_')}_"
+    # Map strategy names to their env var prefixes
+    prefix_map = {
+        "wheel":        "ALPACA_",
+        "csp":          "ALPACA_CSP_",
+        "bull_put":     "ALPACA_BULL_PUT_SPREAD_",
+        "iron_condor":  "ALPACA_IRON_CONDOR_",
+        "covered_call": "ALPACA_COVERED_CALL_",
+    }
+    prefix = prefix_map.get(strategy, f"ALPACA_{strategy.upper()}_")
     key    = os.environ.get(f"{prefix}API_KEY")    or env_vars.get("ALPACA_API_KEY") or os.environ.get("ALPACA_API_KEY")
     secret = os.environ.get(f"{prefix}SECRET_KEY") or env_vars.get("ALPACA_SECRET_KEY") or os.environ.get("ALPACA_SECRET_KEY")
 
