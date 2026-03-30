@@ -35,9 +35,9 @@ def load_account(strategy: str) -> dict:
         os.environ[k] = v
 
     # Also check GitHub Secrets prefix
-    prefix = f"ALPACA_{strategy.upper()}_"
-    key    = os.environ.get(f"{prefix}API_KEY")    or env_vars.get("ALPACA_API_KEY")
-    secret = os.environ.get(f"{prefix}SECRET_KEY") or env_vars.get("ALPACA_SECRET_KEY")
+    prefix = f"ALPACA_{strategy.upper().replace('-', '_')}_"
+    key    = os.environ.get(f"{prefix}API_KEY")    or env_vars.get("ALPACA_API_KEY") or os.environ.get("ALPACA_API_KEY")
+    secret = os.environ.get(f"{prefix}SECRET_KEY") or env_vars.get("ALPACA_SECRET_KEY") or os.environ.get("ALPACA_SECRET_KEY")
 
     return {
         "key":            key,
