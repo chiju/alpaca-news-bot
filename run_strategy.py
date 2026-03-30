@@ -55,11 +55,9 @@ def main():
         blocked = get_blocked_symbols(db_path)
         symbol_file = os.path.join(os.path.dirname(__file__), "wheel/config/symbol_list.txt")
 
-        # Read + backup original symbols
         with open(symbol_file) as f:
             original = f.read()
 
-        # Write filtered list (remove blocked symbols)
         filtered = [s for s in original.strip().splitlines() if s not in blocked]
         with open(symbol_file, "w") as f:
             f.write("\n".join(filtered))
@@ -69,14 +67,19 @@ def main():
             results.append(f"⚠️ Skipping {', '.join(blocked)} (negative sentiment)")
 
         try:
-            sys.path.insert(0, os.path.join(os.path.dirname(__file__), "wheel"))
-            # Clear sys.argv so wheel's argparse doesn't see our --strategy arg
-            _argv = sys.argv[:]
-            sys.argv = [sys.argv[0]]
-            from scripts.run_strategy import main as wheel_main
-            wheel_main()
-            sys.argv = _argv
-            results.append("✅ Wheel executed")
+            import subprocess
+            wheel_dir = os.path.join(os.path.dirname(__file__), "wheel")
+            env = os.environ.copy()
+            result = subprocess.run(
+                [sys.executable, "scripts/run_strategy.py"],
+                cwd=wheel_dir, env=env, capture_output=True, text=True, timeout=120
+            )
+            if result.stdout:
+                print(result.stdout)
+            if result.returncode == 0:
+                results.append("✅ Wheel executed")
+            else:
+                results.append(f"⚠️ Wheel error: {result.stderr[-200:]}")
         finally:
             with open(symbol_file, "w") as f:
                 f.write(original)
