@@ -182,72 +182,61 @@ def send_telegram(text: str):
 # ── Formatter ─────────────────────────────────────────────────────────────────
 def format_report(results: list) -> str:
     now = datetime.now().strftime("%b %d %H:%M")
-    lines = [f"*📊 Options Flow Scanner — {now}*\n"]
+    lines = [f"*📊 Options Flow — {now}*", ""]
 
-    # ── Index ETFs section ──
-    lines.append("*🏛 Index ETFs (S&P / Nasdaq / Russell)*")
-    for r in results:
-        if r["symbol"] not in INDEX_ETFS:
-            continue
-        sig = interpret_signal(r)
-        pc = r["pc_ratio"]
-        lines.append(
-            f"`{r['symbol']}` {sig} | P/C: {pc if pc else 'N/A'} "
-            f"| Calls: {r['call_vol']:,} | Puts: {r['put_vol']:,}"
-        )
-        # Top call
-        if r["calls"]:
-            c = r["calls"][0]
-            sweep = " 🚨SWEEP" if c["sweep"] else ""
-            lines.append(
-                f"  ↳ Top CALL: ${c['strike']:.0f} {c['expiry']} "
-                f"| Vol: {c['volume']:,} | 💰 ${c['premium']:,}{sweep}"
-            )
+    # ── Overall market mood ──
+    spy = next((r for r in results if r["symbol"] == "SPY"), None)
+    qqq = next((r for r in results if r["symbol"] == "QQQ"), None)
+    if spy and qqq:
+        market_sig = interpret_signal(spy)
+        lines.append(f"*Market Mood:* {market_sig}")
+        lines.append(f"SPY P/C `{spy['pc_ratio']}` | QQQ P/C `{qqq['pc_ratio']}`")
+        lines.append("")
 
-    # ── Unusual flow across all symbols ──
+    # ── Top smart money flows ──
     all_unusual = []
     for r in results:
-        for c in r["calls"][:3]:
-            if c["volume"] > 200:
-                c["_sym"] = r["symbol"]
-                all_unusual.append(c)
-        for p in r["puts"][:2]:
-            if p["volume"] > 200:
-                p["_sym"] = r["symbol"]
-                all_unusual.append(p)
-
+        for entry in r["calls"][:3] + r["puts"][:3]:
+            if entry["volume"] >= 200 and entry["premium"] >= MIN_PREMIUM:
+                entry["_sym"] = r["symbol"]
+                all_unusual.append(entry)
     all_unusual.sort(key=lambda x: x["premium"], reverse=True)
 
     if all_unusual:
-        lines.append("\n*🐳 Top Unusual Flow (Smart Money)*")
-        lines.append("_Sorted by premium size_\n")
-        for f in all_unusual[:8]:
-            sweep_tag = " 🚨SWEEP" if f.get("sweep") else ""
-            iv_tag = " ⚡IV-SPIKE" if f.get("iv_spike") else ""
-            side = "🐂" if f["type"] == "CALL" else "🐻"
-            iv_str = f" IV:{f['iv']}%" if f["iv"] else ""
-            delta_str = f" Δ{f['delta']}" if f["delta"] else ""
+        lines.append("*🐳 Smart Money Flows* _(biggest $ first)_")
+        for f in all_unusual[:10]:
+            side   = "🐂 CALL" if f["type"] == "CALL" else "🐻 PUT"
+            tags   = ""
+            if f.get("sweep"):   tags += " 🚨"
+            if f.get("iv_spike"): tags += " ⚡"
+            iv_str = f"  IV {f['iv']}%" if f["iv"] else ""
             lines.append(
-                f"{side} `{f['_sym']}` {f['type']} ${f['strike']:.0f} {f['expiry']} "
-                f"| Vol: {f['volume']:,}{iv_str}{delta_str} "
-                f"| 💰 ${f['premium']:,}{sweep_tag}{iv_tag}"
+                f"{side} *{f['_sym']}* ${f['strike']:.0f} {f['expiry']}"
+                f"  Vol {f['volume']:,}{iv_str}"
+                f"  💰 *${f['premium']//1000}K*{tags}"
             )
+        lines.append("")
 
-    # ── Portfolio summary ──
-    lines.append("\n*💼 Portfolio Stocks Flow*")
+    # ── Portfolio table ──
+    lines.append("*💼 Your Portfolio*")
+    bull, bear, neutral = [], [], []
     for r in results:
-        if r["symbol"] not in PORTFOLIO:
-            continue
-        if r["call_vol"] == 0 and r["put_vol"] == 0:
+        if r["symbol"] not in PORTFOLIO or (r["call_vol"] == 0 and r["put_vol"] == 0):
             continue
         sig = interpret_signal(r)
-        pc = r["pc_ratio"]
-        lines.append(
-            f"`{r['symbol']}` {sig} | P/C: {pc if pc else 'N/A'} "
-            f"| C:{r['call_vol']:,} P:{r['put_vol']:,}"
-        )
+        if "Bullish" in sig:   bull.append((r["symbol"], sig, r["pc_ratio"]))
+        elif "Bearish" in sig: bear.append((r["symbol"], sig, r["pc_ratio"]))
+        else:                  neutral.append((r["symbol"], sig, r["pc_ratio"]))
 
-    lines.append("\n_Options flow is a leading indicator. Not financial advice._")
+    if bull:
+        lines.append("_Bullish:_  " + "  ".join(f"`{s}` P/C {p}" for s,_,p in bull))
+    if neutral:
+        lines.append("_Neutral:_  " + "  ".join(f"`{s}` P/C {p}" for s,_,p in neutral))
+    if bear:
+        lines.append("_Bearish:_  " + "  ".join(f"`{s}` P/C {p}" for s,_,p in bear))
+
+    lines.append("")
+    lines.append("_P/C < 0.6 = bullish · > 1.5 = bearish · Not financial advice_")
     return "\n".join(lines)
 
 
