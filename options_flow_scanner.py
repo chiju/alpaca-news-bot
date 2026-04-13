@@ -26,12 +26,12 @@ MEGA_CAPS   = ["AAPL", "GOOGL", "MSFT", "NVDA", "AMZN", "META", "TSLA"]
 
 ALL_SYMBOLS = list(dict.fromkeys(INDEX_ETFS + PORTFOLIO + MEGA_CAPS))  # deduped
 
-# ── Thresholds ────────────────────────────────────────────────────────────────
-UNUSUAL_VOL_OI_RATIO = 1.5   # volume > 1.5× open interest
-MIN_PREMIUM          = 25000  # $25k minimum notional (filters noise)
+# ── Thresholds (based on Unusual Whales best practices) ──────────────────────
+UNUSUAL_VOL_OI_RATIO = 1.0    # vol > OI = new positions (UW standard minimum)
+MIN_PREMIUM          = 25000  # $25k minimum notional (filters retail noise)
 MAX_DTE              = 45     # only look at options expiring within 45 days
-OTM_CALL_DELTA_MAX   = 0.45  # OTM calls have delta < 0.45
-SWEEP_RATIO          = 3.0   # 3× OI = likely institutional sweep
+SWEEP_BLOCK_SIZE     = 500    # contracts in single strike = institutional block
+IV_SPIKE_THRESHOLD   = 80.0  # IV > 80% on OTM call = buying urgency signal
 
 # ── Credentials ──────────────────────────────────────────────────────────────
 def _key():    return os.environ.get("ALPACA_API_KEY", "")
@@ -105,6 +105,10 @@ def scan_symbol(client: OptionHistoricalDataClient, sym: str) -> dict:
         if premium < MIN_PREMIUM:
             continue
 
+        # IV spike = buying urgency (key signal per Unusual Whales)
+        iv_pct = round(iv * 100, 1) if iv else None
+        iv_spike = iv_pct is not None and iv_pct > IV_SPIKE_THRESHOLD and cp == "C"
+
         entry = {
             "symbol":   sym,
             "contract": contract_sym,
@@ -115,12 +119,13 @@ def scan_symbol(client: OptionHistoricalDataClient, sym: str) -> dict:
             "volume":   int(volume),
             "premium":  int(premium),
             "delta":    round(delta, 2) if delta else None,
-            "iv":       round(iv * 100, 1) if iv else None,
+            "iv":       iv_pct,
             "mid":      round(mid, 2),
+            "iv_spike": iv_spike,
         }
 
-        # Tag as sweep if very high volume
-        entry["sweep"] = volume > 500 and cp == "C"  # large call block = sweep signal
+        # Sweep = large block (institutional) per Unusual Whales guide
+        entry["sweep"] = volume >= SWEEP_BLOCK_SIZE and cp == "C"
 
         if cp == "C":
             calls.append(entry)
@@ -219,14 +224,15 @@ def format_report(results: list) -> str:
         lines.append("\n*🐳 Top Unusual Flow (Smart Money)*")
         lines.append("_Sorted by premium size_\n")
         for f in all_unusual[:8]:
-            sweep_tag = " 🚨" if f.get("sweep") else ""
+            sweep_tag = " 🚨SWEEP" if f.get("sweep") else ""
+            iv_tag = " ⚡IV-SPIKE" if f.get("iv_spike") else ""
             side = "🐂" if f["type"] == "CALL" else "🐻"
             iv_str = f" IV:{f['iv']}%" if f["iv"] else ""
             delta_str = f" Δ{f['delta']}" if f["delta"] else ""
             lines.append(
                 f"{side} `{f['_sym']}` {f['type']} ${f['strike']:.0f} {f['expiry']} "
                 f"| Vol: {f['volume']:,}{iv_str}{delta_str} "
-                f"| 💰 ${f['premium']:,}{sweep_tag}"
+                f"| 💰 ${f['premium']:,}{sweep_tag}{iv_tag}"
             )
 
     # ── Portfolio summary ──
