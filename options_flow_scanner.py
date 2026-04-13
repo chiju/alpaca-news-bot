@@ -80,18 +80,16 @@ def scan_symbol(client: OptionHistoricalDataClient, sym: str) -> dict:
         ask = snap.latest_quote.ask_price or 0
         mid = (bid + ask) / 2 if ask else bid
 
-        # Use daily bar volume if available, else 0
+        # Volume from latest_trade size (best available in chain snapshot)
         volume = 0
-        if snap.daily_bar:
-            volume = snap.daily_bar.volume or 0
+        if snap.latest_trade and snap.latest_trade.size:
+            volume = snap.latest_trade.size
 
-        oi = 0  # OI not always in chain snapshot; use volume signal only
-
-        # Greeks
+        # Greeks + IV directly on snapshot
         delta = iv = None
         if snap.greeks:
             delta = snap.greeks.delta
-            iv = snap.implied_volatility
+        iv = snap.implied_volatility
 
         if cp == "C":
             total_call_vol += volume
