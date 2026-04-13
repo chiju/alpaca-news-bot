@@ -107,3 +107,21 @@ jobs:
         env:
           ALPACA_COVERED_CALL_API_KEY: ${{ secrets.ALPACA_COVERED_CALL_API_KEY }}
           ALPACA_COVERED_CALL_SECRET_KEY: ${{ secrets.ALPACA_COVERED_CALL_SECRET_KEY }}
+
+  options-flow:
+    runs-on: ubuntu-latest
+    if: >
+      github.event.schedule == '*/30 13-21 * * 1-5' ||
+      github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - run: pip install -r requirements.txt
+      - name: Options Flow Scanner
+        run: python options_flow_scanner.py
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
