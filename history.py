@@ -22,6 +22,16 @@ def _conn():
     return db
 
 
+def is_seen_today(url: str) -> bool:
+    """Returns True if this URL was already sent today."""
+    today = datetime.utcnow().isoformat()[:10]
+    with _conn() as db:
+        return bool(db.execute(
+            "SELECT 1 FROM history WHERE url=? AND ts LIKE ?",
+            (url, f"{today}%")
+        ).fetchone())
+
+
 def save(symbol: str, label: str, score: float, headline: str = "", url: str = "", dedup_key: str = ""):
     """Save to SQLite and Google Sheets."""
     ts = datetime.utcnow().isoformat()

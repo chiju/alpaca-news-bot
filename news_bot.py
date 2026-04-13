@@ -15,7 +15,7 @@ if os.path.exists(_env):
 from datetime import datetime
 from fetcher import get_news, get_price_changes
 from sentiment import get_sentiment, generate_summary
-from history import save, get_trend
+from history import save, get_trend, is_seen_today
 from notifier import send
 from reddit import get_reddit_sentiment, format_reddit_section
 from options_flow import get_unusual_flow, format_flow_section
@@ -59,6 +59,8 @@ if __name__ == "__main__":
     seen_urls = set()
     for a in portfolio_news:
         if a.url in seen_urls:
+            continue
+        if is_seen_today(a.url):   # skip if already sent in a previous run today
             continue
         syms = [s for s in a.symbols if s in PORTFOLIO]
         if not syms or any(w in a.headline.lower() for w in NOISE):
