@@ -6,7 +6,8 @@ on:
     - cron: "0 17 * * 1-5"              # 📊 Midday digest 12pm ET
     - cron: "0 21 * * 1-5"              # 🌆 EOD digest 4pm ET
     - cron: "0 13 * * 1-5"              # ⚙️ Open new positions at market open
-    - cron: "*/30 13-21 * * 1-5"        # ⚙️ Check exits every 30min
+    - cron: "*/30 13-21 * * 1-5"        # ⚙️ Trading engines every 30min
+    - cron: "0 14-20 * * 1-5"           # 📊 Options flow every hour 10am-4pm ET
   workflow_dispatch:
 
 env:
@@ -111,7 +112,7 @@ jobs:
   options-flow:
     runs-on: ubuntu-latest
     if: >
-      github.event.schedule == '*/30 13-21 * * 1-5' ||
+      github.event.schedule == '0 14-20 * * 1-5' ||
       github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
