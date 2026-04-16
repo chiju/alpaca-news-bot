@@ -1,169 +1,96 @@
-# Alpaca Portfolio Bot
+# Alpaca Portfolio Bot 🤖
 
-AI-powered portfolio news digest + automated options trading strategies.
+> News intelligence + automated paper trading strategies.
+> Companion repo to [options-flow-scanner](https://github.com/chiju/options-flow-scanner).
 
-## System Overview
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     ALPACA PORTFOLIO BOT                        │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  📰 NEWS INTELLIGENCE          🤖 TRADING ENGINE               │
-│  ─────────────────             ──────────────────              │
-│  Alpaca News API               run_strategy.py                 │
-│       ↓                              ↓                         │
-│  FinBERT Sentiment        ┌──────────┼──────────┐              │
-│  (🟢🔴⚪ per headline)    │          │          │              │
-│       ↓                 WHEEL      CSP      BULL PUT           │
-│  Llama 3.1 Summary    ($980k)   ($100k)    ($100k)             │
-│       ↓                          │                             │
-│  Reddit Buzz              IRON CONDOR  COVERED CALL            │
-│       ↓                    ($100k)       ($100k)               │
-│  Options Flow                    ↓                             │
-│       ↓                   Sentiment Filter                     │
-│  Telegram Digest          (blocks -85% negative)               │
-│  (3x/day)                        ↓                             │
-│                           Alpaca Paper Trading                 │
-│                                                                 │
-│  📊 HISTORY & REPORTING        🛡️ RISK MANAGEMENT              │
-│  ──────────────────            ──────────────────              │
-│  SQLite (local)                Max 20% per trade               │
-│  Google Sheets (cloud)         Max 5 positions                 │
-│  Sentiment trends (🟢🔴⚪)     2% daily loss limit             │
-│  Daily P&L Report              50% profit target               │
-│  (4pm ET → Telegram)           2x stop loss                    │
-│                                7-day expiry close              │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-## Feature Status
-
-```
-✅ BUILT & WORKING                    🔲 TODO
-──────────────────                    ──────
-✅ News digest (3x/day)               🔲 Backtesting engine
-✅ FinBERT sentiment analysis         🔲 Win rate / Sharpe ratio dashboard
-✅ Llama 3.1 AI summary               🔲 Live trading (after 4-5mo paper)
-✅ Reddit sentiment tracking          🔲 Multi-strategy performance compare
-✅ Unusual options flow               🔲 Email/WhatsApp alerts
-✅ Google Sheets history              🔲 Portfolio rebalancing
-✅ Sentiment trend dots (🟢🔴⚪)      🔲 Tax lot tracking
-✅ Wheel strategy (CSP + CC)          🔲 Options Greeks dashboard
-✅ CSP strategy (separate account)    🔲 Earnings calendar integration
-✅ Bull Put Spread strategy           🔲 Macro event alerts (Fed, CPI)
-✅ Iron Condor strategy               🔲 Cloud deployment (post-validation)
-✅ Covered Call strategy
-✅ 5 isolated paper accounts
-✅ Sentiment filter (blocks -85%)
-✅ Daily P&L report
-✅ GitHub Actions automation
-✅ Per-symbol blocking
-✅ Modular strategy architecture
-```
-
-## Data Flow
-
-```
-Every 30min (market hours):
-─────────────────────────
-Alpaca News → FinBERT → SQLite/Sheets
-                ↓
-         Sentiment DB
-                ↓
-    run_strategy.py checks DB
-                ↓
-    Block stocks with >85% negative
-                ↓
-    Execute wheel/CSP on clean stocks
-                ↓
-    Telegram notification
-
-3x/day (8am, 12pm, 4pm ET):
-────────────────────────────
-News + Reddit + Options Flow
-         ↓
-    FinBERT scores
-         ↓
-    Llama summary
-         ↓
-    Telegram digest
-
-4pm ET daily:
-─────────────
-Both accounts → P&L report → Telegram
-```
+---
 
 ## Architecture
 
 ```
-alpaca-news-bot/
-│
-├── news_bot.py          # News digest orchestrator
-├── run_strategy.py      # Strategy runner entry point
-├── daily_report.py      # Daily P&L report
-├── config_loader.py     # Credential loader (local + GitHub Actions)
-│
-├── core/
-│   ├── broker.py        # Alpaca API facade (single entry point for all API calls)
-│   └── risk.py          # Position sizing + daily loss limits
-│
-├── strategies/
-│   ├── base.py          # Base class (enforces all trading rules)
-│   ├── csp.py           # Cash-Secured Put strategy
-│   ├── covered_call.py  # Covered Call (TODO)
-│   └── bull_put.py      # Bull Put Spread (TODO)
-│
-├── strategy_config/
-│   └── params.py        # All strategy parameters (single source of truth)
-│
-├── wheel/               # Official Alpaca wheel strategy (CSP + Covered Call cycle)
-│   ├── core/            # Broker client, state manager, execution
-│   ├── config/          # Params, credentials, symbol list
-│   └── scripts/         # run_strategy.py entry point
-│
-├── fetcher.py           # Alpaca news API wrapper
-├── sentiment.py         # FinBERT sentiment + Llama 3.1 summary via HuggingFace
-├── history.py           # SQLite (local) + Google Sheets (cloud) sentiment history
-├── notifier.py          # Telegram sender
-├── reddit.py            # Reddit sentiment (r/wallstreetbets, r/stocks)
-└── options_flow.py      # Unusual options activity detector
+┌─────────────────────────────────────────────────────────────┐
+│                   ALPACA PORTFOLIO BOT                       │
+│                                                              │
+│  📰 NEWS INTELLIGENCE          🤖 TRADING ENGINE            │
+│  ─────────────────             ──────────────────           │
+│  Alpaca News API               5 isolated paper accounts    │
+│       ↓                                                      │
+│  FinBERT Sentiment             Wheel      ($980K)           │
+│  (🟢🔴⚪ per headline)         CSP        ($100K)           │
+│       ↓                        Bull-Put   ($100K)           │
+│  Groq Llama Summary            Iron-Condor($100K)           │
+│       ↓                        Covered-Call($100K)          │
+│  Reddit Buzz                          ↓                     │
+│       ↓                        Sentiment Filter             │
+│  Telegram Digest               (blocks >85% negative)       │
+│  (5x/day)                             ↓                     │
+│                                Alpaca Paper Trading         │
+│                                                              │
+│  📊 PERFORMANCE TRACKING                                    │
+│  ──────────────────                                         │
+│  PERFORMANCE_LOG (Google Sheets)                            │
+│  Daily equity + P&L per strategy                            │
+│  Win rate + position sizing compliance                      │
+│  Trade Journal                                              │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-## What It Does
+---
 
-### 1. News Digest (3x/day)
-- Fetches news from Alpaca (Benzinga source) for 17 portfolio stocks + watchlist
-- **FinBERT AI** classifies each headline: 🟢 positive / 🔴 negative / ⚪ neutral
-- **Llama 3.1 8B** generates a 4-line market summary
-- Checks Reddit buzz (r/wallstreetbets, r/stocks, r/investing)
-- Detects unusual options flow (volume > 2× open interest)
-- Sends structured digest to Telegram
-- Logs all sentiment to SQLite + Google Sheets with URL
+## Schedule (cron-job.org → GitHub Actions)
 
-### 2. Trading Strategies (every 30min during market hours)
+| Berlin time | ET | Job input | What runs |
+|------------|-----|-----------|-----------|
+| 14:00 | 8:00am | `digest` | Morning news digest |
+| 16:00 | 10:00am | `digest` | Late morning digest |
+| 18:00 | 12:00pm | `digest` | Midday digest |
+| 20:00 | 2:00pm | `digest` | Afternoon digest |
+| 22:00 | 4:00pm | `report` | EOD digest + P&L report |
+| Every 30min 15:00-22:00 | 9am-4pm | `trading` | All 5 trading engines |
 
-#### Wheel Strategy (official Alpaca implementation)
-- **Step 1:** Sell Cash-Secured Puts on stocks you want to own
-- **Step 2:** If assigned → own the stock
-- **Step 3:** Sell Covered Calls on owned shares
-- **Step 4:** If called away → back to Step 1
-- **Sentiment filter:** Skips stocks with >85% negative news in last 24hrs
-- Account: `options-paper` (~$980k)
+---
 
-#### Cash-Secured Put (CSP)
-- Sells PUTs 10-15% below current price
-- DTE: 21-45 days, Delta: 0.20-0.25
-- Closes at 50% profit or 2× loss
-- Separate paper account for clean P&L tracking
-- Account: `csp-paper` ($100k fresh)
+## News Digest (5x/day)
 
-### 3. Daily P&L Report (4pm ET)
-- Shows equity, today's P&L, total P&L vs $100k start
-- Lists all open option positions with unrealized gains/losses
-- Sent to Telegram at market close
+1. Fetch headlines from Alpaca News API (Benzinga source)
+2. **FinBERT** scores each headline: 🟢 positive / 🔴 negative / ⚪ neutral
+3. **Groq Llama** generates 4-line market summary
+4. Reddit buzz (r/wallstreetbets, r/stocks, r/investing)
+5. Telegram digest with trend dots (last 3 sentiment readings)
 
-## Trading Rules (enforced by BaseStrategy)
+Sentiment filter: blocks stocks with >85% negative news from trading.
+
+---
+
+## Trading Strategies
+
+### Wheel ($980K account)
+```
+Phase 1: Sell Cash-Secured Put → collect premium
+Phase 2: If assigned → own 100 shares
+Phase 3: Sell Covered Call → collect premium
+Phase 4: If called away → back to Phase 1
+```
+Currently: 18 stock positions + 6 covered calls open.
+
+### CSP — Cash-Secured Put ($100K)
+Sell puts 10-15% below price, DTE 21-45, delta 0.20-0.25.
+Close at 50% profit or 2× loss.
+
+### Bull-Put Spread ($100K)
+Sell put at strike A, buy put at strike B ($5 below).
+Max loss capped. Capital efficient.
+
+### Iron Condor ($100K)
+Sell put spread + call spread. Profit if price stays in range.
+
+### Covered Call ($100K)
+Own 100 shares, sell OTM calls. Collect premium, cap upside.
+Currently holds: PLTR, SOFI, PYPL, OKLO, IONQ (100 shares each).
+
+---
+
+## Risk Rules (all strategies)
 
 | Rule | Value |
 |------|-------|
@@ -174,66 +101,79 @@ alpaca-news-bot/
 | Stop loss | 2× premium collected |
 | Close before expiry | 7 days |
 
-## Running Locally
+---
+
+## Performance Tracking
+
+**PERFORMANCE_LOG** sheet updated daily at EOD:
+
+| Column | What |
+|--------|------|
+| `*_equity` | Equity per strategy |
+| `*_pnl` | P&L vs starting capital |
+| `total_equity` | All 5 accounts combined |
+| `win_rate_pct` | % of positions currently profitable |
+| `max_position_pct` | Largest position as % of account |
+| `position_sizing_ok` | ✅ if all within 20% limit |
+| `avg_unrealized_pnl_pct` | Average unrealized gain/loss % |
+
+**Current performance (Apr 16, 2026):**
+- Wheel: $1,013,765 (+$33,765)
+- CSP: $101,318 (+$1,318)
+- Bull-Put: $100,570 (+$570)
+- Iron-Condor: $101,164 (+$1,164)
+- Covered-Call: $99,949 (-$51, just started)
+- **Total: $1,416,766 (+$36,766)**
+
+---
+
+## Paper Accounts
+
+| Strategy | Env Key | Account ID |
+|----------|---------|-----------|
+| Wheel | `ALPACA_API_KEY` | PK7ITJL... |
+| CSP | `ALPACA_CSP_API_KEY` | PKIINOW... |
+| Bull-Put | `ALPACA_BULL_PUT_SPREAD_API_KEY` | PK6HIZA... |
+| Iron-Condor | `ALPACA_IRON_CONDOR_API_KEY` | PKCFSO4... |
+| Covered-Call | `ALPACA_COVERED_CALL_API_KEY` | PKOKKG... |
+
+---
+
+## Files
+
+| File | Purpose |
+|------|---------|
+| `news_bot.py` | News digest orchestrator |
+| `run_strategy.py` | Strategy runner entry point |
+| `daily_report.py` | Daily P&L report + PERFORMANCE_LOG snapshot |
+| `config_loader.py` | Load account credentials per strategy |
+| `fetcher.py` | Alpaca News API wrapper |
+| `sentiment.py` | FinBERT + Groq summary |
+| `history.py` | SQLite sentiment history + Google Sheets |
+| `reddit.py` | Reddit sentiment (no API key needed) |
+| `notifier.py` | Telegram sender |
+| `strategies/csp.py` | Cash-Secured Put |
+| `strategies/bull_put.py` | Bull Put Spread |
+| `strategies/covered_call.py` | Covered Call |
+| `strategies/iron_condor.py` | Iron Condor |
+| `wheel/` | Official Alpaca wheel strategy |
+
+---
+
+## Local Setup
 
 ```bash
-# News digest
-python news_bot.py
+source ~/.alpaca/options-paper.env
+cd ~/stocks/alpaca-news-bot
+source ~/stocks/options-flow-scanner/.venv/bin/activate
 
-# Trading strategies (market must be open)
-python run_strategy.py --strategy csp
-python run_strategy.py --strategy wheel
-
-# P&L report
-python daily_report.py
+python news_bot.py                          # news digest
+python run_strategy.py --strategy csp       # CSP engine
+python run_strategy.py --strategy wheel     # Wheel engine
+python daily_report.py                      # P&L report
 ```
 
-## Credentials
+---
 
-Local files in `~/.alpaca/`:
-```
-options-paper.env   # main account + Telegram/Sheets creds
-csp-paper.env       # CSP strategy account
-```
-
-GitHub Secrets:
-```
-ALPACA_API_KEY / ALPACA_SECRET_KEY          # main account
-ALPACA_CSP_API_KEY / ALPACA_CSP_SECRET_KEY  # CSP account
-TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID
-HF_TOKEN                                    # HuggingFace (FinBERT + Llama)
-GOOGLE_CREDENTIALS / GOOGLE_SHEET_ID        # Google Sheets
-```
-
-## GitHub Actions Schedule
-
-| Time (UTC) | ET | Job |
-|---|---|---|
-| 12:00 Mon-Fri | 8am | 🌅 Morning digest (18hrs of news) |
-| 17:00 Mon-Fri | 12pm | 📊 Midday digest (5hrs) |
-| 21:00 Mon-Fri | 4pm | 🌆 EOD digest + P&L report |
-| 13:00 Mon-Fri | 9am | ⚙️ Open new positions |
-| Every 30min 13-21 Mon-Fri | 9am-5pm | ⚙️ Check exits |
-
-## Strategy Parameters (`strategy_config/params.py`)
-
-All thresholds in one place:
-```python
-DELTA_MIN/MAX    = 0.20-0.30   # option moneyness
-DTE_MIN/MAX      = 21-45       # days to expiry
-CSP_OTM_MIN/MAX  = 10-15%      # how far below price
-PROFIT_TARGET    = 50%         # close at 50% profit
-STOP_LOSS_MULT   = 2.0         # close if loss > 2× premium
-MAX_POSITIONS    = 5           # max open at once
-MAX_POSITION_PCT = 20%         # max per trade
-MAX_DAILY_LOSS   = 2%          # halt if down 2% today
-```
-
-## What's Next (TODO)
-
-- [ ] `strategies/covered_call.py` - standalone covered call strategy
-- [ ] `strategies/bull_put.py` - bull put spread (capital efficient)
-- [ ] Backtesting on historical data before live
-- [ ] Performance dashboard (win rate, Sharpe ratio per strategy)
-- [ ] Live trading after 4-5 months paper validation
-- [ ] Add more paper accounts per strategy for clean comparison
+## Disclaimer
+Paper trading only. Not financial advice. Options trading involves significant risk.
