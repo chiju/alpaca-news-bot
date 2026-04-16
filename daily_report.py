@@ -18,11 +18,11 @@ TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 CHAT  = os.environ.get("TELEGRAM_CHAT_ID", "")
 
 ACCOUNTS = {
-    "wheel":        "options-paper",
-    "csp":          "csp",
-    "bull-put":     "bull-put-spread",
-    "iron-condor":  "iron-condor",
-    "covered-call": "covered-call",
+    "wheel":        ("options-paper", 980_000),
+    "csp":          ("csp",           100_000),
+    "bull-put":     ("bull_put",      100_000),
+    "iron-condor":  ("iron_condor",   100_000),
+    "covered-call": ("covered_call",  100_000),
 }
 
 
@@ -32,7 +32,7 @@ def notify(msg):
                         "disable_web_page_preview": True}, timeout=10)
 
 
-def account_report(name: str, account_type: str) -> str:
+def account_report(name: str, account_type: str, baseline: int) -> str:
     try:
         cfg = load_account(account_type)
         broker = Broker(cfg["key"], cfg["secret"])
@@ -43,7 +43,7 @@ def account_report(name: str, account_type: str) -> str:
         last_equity = float(account.last_equity)
         day_pnl     = equity - last_equity
         day_pct     = (day_pnl / last_equity * 100) if last_equity > 0 else 0
-        total_pnl   = equity - 100_000  # vs $100k start
+        total_pnl   = equity - baseline
 
         lines = [
             f"*📊 {name.upper()}*",
@@ -68,7 +68,7 @@ def account_report(name: str, account_type: str) -> str:
 
 if __name__ == "__main__":
     header = f"📈 *P&L Report* — {datetime.now().strftime('%b %d %H:%M')}\n"
-    reports = [account_report(name, acct) for name, acct in ACCOUNTS.items()]
+    reports = [account_report(name, acct, baseline) for name, (acct, baseline) in ACCOUNTS.items()]
     msg = header + "\n\n".join(reports)
     notify(msg)
     print(msg)
