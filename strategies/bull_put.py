@@ -125,22 +125,23 @@ class BullPutSpread(BaseStrategy):
             except Exception as e:
                 results.append(f"⚠️ Close failed: {e}")
 
-        # Count open spreads
+        # Count open spreads (short puts = number of spreads)
         from strategy_config.params import MAX_POSITIONS
-        open_opts = [p for p in self.broker.positions()
-                     if float(p.qty) < 0 and re.search(r'\d{6}P\d{8}', p.symbol)]
-        if len(open_opts) >= MAX_POSITIONS:
-            results.append(f"⏸️ Max {MAX_POSITIONS} positions")
+        all_positions = self.broker.positions()
+        open_short_puts = [p for p in all_positions
+                           if float(p.qty) < 0 and re.search(r'\d{6}P\d{8}', p.symbol)]
+        open_syms = {re.match(r'([A-Z]+)', p.symbol).group(1) for p in open_short_puts}
+
+        if len(open_short_puts) >= MAX_POSITIONS:
+            results.append(f"⏸️ Max {MAX_POSITIONS} spreads open")
             return results
 
-        # Find and place spreads
         from core.risk import max_trade_capital
         account_value = float(account.portfolio_value)
         prices = self.broker.latest_prices(self.symbols)
-        open_syms = {re.match(r'([A-Z]+)', p.symbol).group(1) for p in open_opts}
 
         for symbol in self.symbols:
-            if len(open_opts) >= MAX_POSITIONS:
+            if len(open_short_puts) >= MAX_POSITIONS:
                 break
             if symbol in open_syms:
                 continue
@@ -172,6 +173,7 @@ class BullPutSpread(BaseStrategy):
                     f"ROC: {best['roc']:.0f}%"
                 )
                 open_syms.add(symbol)
+                open_short_puts.append(None)  # increment count
             except Exception as e:
                 results.append(f"⚠️ `{symbol}` failed: {e}")
 
