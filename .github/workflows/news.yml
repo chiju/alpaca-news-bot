@@ -61,8 +61,6 @@ jobs:
           ALPACA_COVERED_CALL_SECRET_KEY: ${{ secrets.ALPACA_COVERED_CALL_SECRET_KEY }}
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
           GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
-          ALPACA_CSP_API_KEY: ${{ secrets.ALPACA_CSP_API_KEY }}
-          ALPACA_CSP_SECRET_KEY: ${{ secrets.ALPACA_CSP_SECRET_KEY }}
 
   trading-engines:
     runs-on: ubuntu-latest
