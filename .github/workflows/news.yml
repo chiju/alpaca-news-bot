@@ -53,6 +53,16 @@ jobs:
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
           ALPACA_CSP_API_KEY: ${{ secrets.ALPACA_CSP_API_KEY }}
           ALPACA_CSP_SECRET_KEY: ${{ secrets.ALPACA_CSP_SECRET_KEY }}
+          ALPACA_BULL_PUT_SPREAD_API_KEY: ${{ secrets.ALPACA_BULL_PUT_SPREAD_API_KEY }}
+          ALPACA_BULL_PUT_SPREAD_SECRET_KEY: ${{ secrets.ALPACA_BULL_PUT_SPREAD_SECRET_KEY }}
+          ALPACA_IRON_CONDOR_API_KEY: ${{ secrets.ALPACA_IRON_CONDOR_API_KEY }}
+          ALPACA_IRON_CONDOR_SECRET_KEY: ${{ secrets.ALPACA_IRON_CONDOR_SECRET_KEY }}
+          ALPACA_COVERED_CALL_API_KEY: ${{ secrets.ALPACA_COVERED_CALL_API_KEY }}
+          ALPACA_COVERED_CALL_SECRET_KEY: ${{ secrets.ALPACA_COVERED_CALL_SECRET_KEY }}
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          ALPACA_CSP_API_KEY: ${{ secrets.ALPACA_CSP_API_KEY }}
+          ALPACA_CSP_SECRET_KEY: ${{ secrets.ALPACA_CSP_SECRET_KEY }}
 
   trading-engines:
     runs-on: ubuntu-latest

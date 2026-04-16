@@ -32,6 +32,65 @@ def notify(msg):
                         "disable_web_page_preview": True}, timeout=10)
 
 
+def _save_performance_snapshot():
+    """Append today's equity for each account to PERFORMANCE_LOG sheet."""
+    sheet_id = os.environ.get("GOOGLE_SHEET_ID")
+    if not sheet_id:
+        return
+    try:
+        creds_json = os.environ.get("GOOGLE_CREDENTIALS")
+        if not creds_json:
+            return
+        import json
+        from google.oauth2.service_account import Credentials
+        from googleapiclient.discovery import build
+        creds = Credentials.from_service_account_info(
+            json.loads(creds_json), scopes=["https://www.googleapis.com/auth/spreadsheets"])
+        svc = build("sheets", "v4", credentials=creds, cache_discovery=False)
+
+        # Ensure PERFORMANCE_LOG tab exists
+        meta = svc.spreadsheets().get(spreadsheetId=sheet_id).execute()
+        tabs = {s["properties"]["title"] for s in meta["sheets"]}
+        if "PERFORMANCE_LOG" not in tabs:
+            svc.spreadsheets().batchUpdate(spreadsheetId=sheet_id,
+                body={"requests": [{"addSheet": {"properties": {"title": "PERFORMANCE_LOG"}}}]}).execute()
+            svc.spreadsheets().values().update(spreadsheetId=sheet_id, range="PERFORMANCE_LOG!A1",
+                valueInputOption="RAW", body={"values": [
+                    ["date", "wheel_equity", "wheel_pnl",
+                     "csp_equity", "csp_pnl",
+                     "bull_put_equity", "bull_put_pnl",
+                     "iron_condor_equity", "iron_condor_pnl",
+                     "covered_call_equity", "covered_call_pnl",
+                     "total_equity", "total_pnl"]
+                ]}).execute()
+
+        today = datetime.now().strftime("%Y-%m-%d")
+        row = [today]
+        total_equity = 0
+        total_baseline = 0
+
+        for name, (acct, baseline) in ACCOUNTS.items():
+            try:
+                cfg = load_account(acct)
+                broker = Broker(cfg["key"], cfg["secret"])
+                equity = float(broker.account().equity)
+                pnl = equity - baseline
+                row += [round(equity, 2), round(pnl, 2)]
+                total_equity += equity
+                total_baseline += baseline
+            except Exception:
+                row += ["", ""]
+
+        row += [round(total_equity, 2), round(total_equity - total_baseline, 2)]
+
+        svc.spreadsheets().values().append(spreadsheetId=sheet_id, range="PERFORMANCE_LOG!A2",
+            valueInputOption="RAW", insertDataOption="INSERT_ROWS",
+            body={"values": [row]}).execute()
+        print("📊 Performance snapshot saved")
+    except Exception as e:
+        print(f"Performance snapshot error: {e}")
+
+
 def account_report(name: str, account_type: str, baseline: int) -> str:
     try:
         cfg = load_account(account_type)
@@ -90,3 +149,4 @@ if __name__ == "__main__":
     msg = header + "\n\n".join(reports)
     notify(msg)
     print(msg)
+    _save_performance_snapshot()
