@@ -18,7 +18,6 @@ from sentiment import get_sentiment, generate_summary
 from history import save, get_trend, is_seen_today
 from notifier import send
 from reddit import get_reddit_sentiment, format_reddit_section
-from options_flow import get_unusual_flow, format_flow_section
 
 PORTFOLIO = [
     "POET","AMZN","NVDA","UUUU","PLTR","TSLA",
@@ -168,12 +167,6 @@ if __name__ == "__main__":
         reddit_section = format_reddit_section(reddit_data)
         if reddit_section:
             lines.append(reddit_section)
-
-        # Unusual options flow
-        flow = get_unusual_flow(PORTFOLIO[:8])
-        flow_section = format_flow_section(flow)
-        if flow_section:
-            lines.append(flow_section)
 
     # For intraday runs, skip if no bullish/bearish signals
     if run_type == "📊 Portfolio Digest" and len(positive) == 0 and len(negative) == 0:
