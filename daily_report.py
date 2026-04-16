@@ -59,7 +59,16 @@ def account_report(name: str, account_type: str, baseline: int) -> str:
             for p in opts:
                 pnl = float(p.unrealized_pl)
                 pct = float(p.unrealized_plpc) * 100
-                lines.append(f"  {'🟢' if pnl >= 0 else '🔴'} `{p.symbol[-15:]}` {pnl:+.0f} ({pct:+.1f}%)")
+                # Parse: MSFT260501C00420000 → MSFT $420 May01 CALL
+                m = re.match(r'([A-Z]+)(\d{2})(\d{2})(\d{2})([CP])(\d{8})', p.symbol)
+                if m:
+                    sym, yy, mm, dd, cp, strike_raw = m.groups()
+                    strike = int(strike_raw) / 1000
+                    months = ["","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+                    label = f"{sym} ${strike:.0f} {months[int(mm)]}{dd} {'CALL' if cp=='C' else 'PUT'}"
+                else:
+                    label = p.symbol
+                lines.append(f"  {'🟢' if pnl >= 0 else '🔴'} `{label}` {pnl:+.0f} ({pct:+.1f}%)")
 
         return "\n".join(lines)
     except Exception as e:
