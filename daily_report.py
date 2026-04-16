@@ -53,6 +53,15 @@ def account_report(name: str, account_type: str, baseline: int) -> str:
         ]
 
         # Open positions
+        # Stock positions
+        stocks = [p for p in positions if not re.search(r'\d{6}[CP]\d{8}', p.symbol)]
+        if stocks:
+            lines.append(f"Stocks ({len(stocks)}):")
+            for p in stocks:
+                pnl = float(p.unrealized_pl)
+                lines.append(f"  {'🟢' if pnl >= 0 else '🔴'} `{p.symbol}` x{int(float(p.qty))}  {pnl:+.0f}")
+
+        # Option positions
         opts = [p for p in positions if re.search(r'\d{6}[CP]\d{8}', p.symbol)]
         if opts:
             lines.append(f"Options ({len(opts)} open):")
