@@ -33,7 +33,7 @@ def notify(msg):
 
 
 def _save_performance_snapshot():
-    """Append today's equity for each account to PERFORMANCE_LOG sheet."""
+    """Append today's equity + win rate + risk metrics to PERFORMANCE_LOG sheet."""
     sheet_id = os.environ.get("GOOGLE_SHEET_ID")
     if not sheet_id:
         return
@@ -48,45 +48,71 @@ def _save_performance_snapshot():
             json.loads(creds_json), scopes=["https://www.googleapis.com/auth/spreadsheets"])
         svc = build("sheets", "v4", credentials=creds, cache_discovery=False)
 
-        # Ensure PERFORMANCE_LOG tab exists
         meta = svc.spreadsheets().get(spreadsheetId=sheet_id).execute()
         tabs = {s["properties"]["title"] for s in meta["sheets"]}
         if "PERFORMANCE_LOG" not in tabs:
             svc.spreadsheets().batchUpdate(spreadsheetId=sheet_id,
                 body={"requests": [{"addSheet": {"properties": {"title": "PERFORMANCE_LOG"}}}]}).execute()
             svc.spreadsheets().values().update(spreadsheetId=sheet_id, range="PERFORMANCE_LOG!A1",
-                valueInputOption="RAW", body={"values": [
-                    ["date", "wheel_equity", "wheel_pnl",
-                     "csp_equity", "csp_pnl",
-                     "bull_put_equity", "bull_put_pnl",
-                     "iron_condor_equity", "iron_condor_pnl",
-                     "covered_call_equity", "covered_call_pnl",
-                     "total_equity", "total_pnl"]
-                ]}).execute()
+                valueInputOption="RAW", body={"values": [[
+                    "date",
+                    "wheel_equity", "wheel_pnl",
+                    "csp_equity", "csp_pnl",
+                    "bull_put_equity", "bull_put_pnl",
+                    "iron_condor_equity", "iron_condor_pnl",
+                    "covered_call_equity", "covered_call_pnl",
+                    "total_equity", "total_pnl",
+                    "open_positions", "winning_positions", "win_rate_pct",
+                    "max_position_pct", "position_sizing_ok",
+                    "avg_unrealized_pnl_pct"
+                ]]}).execute()
 
         today = datetime.now().strftime("%Y-%m-%d")
         row = [today]
-        total_equity = 0
-        total_baseline = 0
+        total_equity = total_baseline = 0
+        all_positions = []
 
         for name, (acct, baseline) in ACCOUNTS.items():
             try:
                 cfg = load_account(acct)
                 broker = Broker(cfg["key"], cfg["secret"])
-                equity = float(broker.account().equity)
+                acc = broker.account()
+                equity = float(acc.equity)
                 pnl = equity - baseline
                 row += [round(equity, 2), round(pnl, 2)]
                 total_equity += equity
                 total_baseline += baseline
+                # Collect option positions for risk metrics
+                for p in broker.positions():
+                    if re.search(r'\d{6}[CP]\d{8}', p.symbol):
+                        all_positions.append({
+                            "pnl": float(p.unrealized_pl),
+                            "pnl_pct": float(p.unrealized_plpc) * 100,
+                            "value": abs(float(p.market_value)),
+                            "equity": equity,
+                        })
             except Exception:
                 row += ["", ""]
 
         row += [round(total_equity, 2), round(total_equity - total_baseline, 2)]
 
+        # Risk metrics across all accounts
+        if all_positions:
+            winning = [p for p in all_positions if p["pnl"] > 0]
+            win_rate = round(len(winning) / len(all_positions) * 100, 1)
+            # Position sizing: each position should be < 20% of account
+            oversized = [p for p in all_positions if p["equity"] > 0 and p["value"] / p["equity"] > 0.20]
+            sizing_ok = "✅" if not oversized else f"❌ {len(oversized)} oversized"
+            max_pos_pct = round(max(p["value"] / p["equity"] * 100 for p in all_positions if p["equity"] > 0), 1)
+            avg_pnl_pct = round(sum(p["pnl_pct"] for p in all_positions) / len(all_positions), 1)
+            row += [len(all_positions), len(winning), win_rate, max_pos_pct, sizing_ok, avg_pnl_pct]
+        else:
+            row += [0, 0, 0, 0, "N/A", 0]
+
         svc.spreadsheets().values().append(spreadsheetId=sheet_id, range="PERFORMANCE_LOG!A2",
             valueInputOption="RAW", insertDataOption="INSERT_ROWS",
             body={"values": [row]}).execute()
-        print("📊 Performance snapshot saved")
+        print(f"📊 Performance snapshot saved — {len(all_positions)} positions, win rate: {row[-4]}%")
     except Exception as e:
         print(f"Performance snapshot error: {e}")
 
