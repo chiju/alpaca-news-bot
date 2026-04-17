@@ -22,9 +22,9 @@ from reddit import get_reddit_sentiment, format_reddit_section
 PORTFOLIO = [
     "POET","AMZN","NVDA","UUUU","PLTR","TSLA",
     "SOFI","META","ACHR","IONQ","PATH","JOBY",
-    "OKLO","PYPL","LAES","CRWV","DUOL"
+    "OKLO","PYPL","LAES","CRWV","DUOL","MSFT"
 ]
-WATCHLIST = ["MSFT"]  # Add any symbols you want to watch here
+WATCHLIST = []  # Add symbols you want to watch but don't own
 MARKET_ETFS = ["SPY","QQQ","DIA","IWM","TLT","GLD","USO"]
 NOISE = ["bitcoin","crypto","penguins","nft","meme","dogecoin"]
 MIN_CONFIDENCE = 0.70  # Only show if FinBERT score > 70%
