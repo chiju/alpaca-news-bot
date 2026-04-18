@@ -73,7 +73,8 @@ jobs:
           cache: "pip"
       - run: pip install -r requirements.txt
 
-      - name: CSP Engine
+      - name: CSP Engine (DISABLED - flow_trader.py handles CSP account)
+        if: false
         run: python run_strategy.py --strategy csp
         env:
           ALPACA_CSP_API_KEY: ${{ secrets.ALPACA_CSP_API_KEY }}
