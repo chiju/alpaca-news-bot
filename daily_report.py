@@ -27,9 +27,8 @@ ACCOUNTS = {
 
 
 def notify(msg):
-    requests.post(f"https://api.telegram.org/bot{TOKEN}/sendMessage",
-                  json={"chat_id": CHAT, "text": msg, "parse_mode": "Markdown",
-                        "disable_web_page_preview": True}, timeout=10)
+    from notifier import send as _send
+    _send(msg)
 
 
 def _save_performance_snapshot():

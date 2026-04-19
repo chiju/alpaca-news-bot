@@ -11,9 +11,8 @@ from core.broker import Broker
 
 def notify(token, chat, msg):
     try:
-        requests.post(f"https://api.telegram.org/bot{token}/sendMessage",
-                      json={"chat_id": chat, "text": msg, "parse_mode": "Markdown",
-                            "disable_web_page_preview": True}, timeout=10)
+        from notifier import send as _send
+        _send(msg)
     except:
         pass
 
