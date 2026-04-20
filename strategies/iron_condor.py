@@ -12,7 +12,7 @@ IC_MIN_CREDIT = 1.00   # min $1.00 total credit ($100 per condor)
 class IronCondor(BaseStrategy):
 
     name    = "Iron Condor"
-    symbols = ["QQQ", "SPY", "NVDA", "PLTR", "META"]
+    symbols = ["SPY", "IWM", "PLTR", "SOFI", "IONQ"]  # affordable for $100K account
 
     def find_entries(self, prices: dict, max_capital: float) -> list:
         entries = []
