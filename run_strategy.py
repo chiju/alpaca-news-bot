@@ -79,6 +79,8 @@ def main():
                 results.append("✅ Wheel executed")
             else:
                 results.append(f"⚠️ Wheel error: {result.stderr[-200:]}")
+        except Exception as e:
+            results.append(f"⚠️ Wheel error: {e}")
         finally:
             with open(symbol_file, "w") as f:
                 f.write(original)
