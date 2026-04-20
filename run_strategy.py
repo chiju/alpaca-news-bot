@@ -98,7 +98,14 @@ def main():
         results = IronCondor(broker).run()
 
     msg = header + "\n".join(results)
-    notify(cfg["telegram_token"], cfg["telegram_chat"], msg)
+    
+    # Only send Telegram if something actually happened (trade placed, closed, or error)
+    meaningful = any(
+        any(kw in r for kw in ["✅", "❌", "⚠️", "🛑", "Closed", "failed"])
+        for r in results
+    )
+    if meaningful:
+        notify(cfg["telegram_token"], cfg["telegram_chat"], msg)
     print(msg)
 
 
