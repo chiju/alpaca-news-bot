@@ -22,8 +22,9 @@ from reddit import get_reddit_sentiment, format_reddit_section
 PORTFOLIO = [
     "POET","AMZN","NVDA","UUUU","PLTR","TSLA",
     "SOFI","META","ACHR","IONQ","PATH","JOBY",
-    "OKLO","PYPL","LAES","CRWV","DUOL","MSFT","SMCI"
+    "OKLO","PYPL","LAES","CRWV","DUOL","MSFT"
 ]
+WATCHLIST = ["SMCI"]  # Watching, not holding yet
 WATCHLIST = []  # Add symbols you want to watch but don't own
 MARKET_ETFS = ["SPY","QQQ","DIA","IWM","TLT","GLD","USO"]
 NOISE = ["bitcoin","crypto","penguins","nft","meme","dogecoin"]
