@@ -24,7 +24,7 @@ PORTFOLIO = [
     "SOFI","META","ACHR","IONQ","PATH","JOBY",
     "OKLO","PYPL","LAES","CRWV","DUOL","MSFT"
 ]
-WATCHLIST = ["SMCI","ASTS","NBIS"]  # Watching, not holding yet
+WATCHLIST = ["SMCI","ASTS","NBIS","RMBS"]  # Watching, not holding yet
 MARKET_ETFS = ["SPY","QQQ","DIA","IWM","TLT","GLD","USO"]
 NOISE = ["bitcoin","crypto","penguins","nft","meme","dogecoin"]
 MIN_CONFIDENCE = 0.70  # Only show if FinBERT score > 70%
