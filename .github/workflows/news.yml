@@ -81,7 +81,8 @@ jobs:
           ALPACA_CSP_API_KEY: ${{ secrets.ALPACA_CSP_API_KEY }}
           ALPACA_CSP_SECRET_KEY: ${{ secrets.ALPACA_CSP_SECRET_KEY }}
 
-      - name: Wheel Strategy
+      - name: Wheel Strategy (DISABLED - account inactive)
+        if: false
         run: python run_strategy.py --strategy wheel
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
