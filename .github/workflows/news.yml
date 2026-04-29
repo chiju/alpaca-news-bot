@@ -87,7 +87,8 @@ jobs:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
 
-      - name: Bull Put Spread
+      - name: Bull Put Spread (DISABLED - account repurposed as $10K flow trader)
+        if: false
         run: python run_strategy.py --strategy bull_put
         env:
           ALPACA_BULL_PUT_SPREAD_API_KEY: ${{ secrets.ALPACA_BULL_PUT_SPREAD_API_KEY }}
