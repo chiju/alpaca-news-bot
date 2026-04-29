@@ -71,6 +71,7 @@ SMCI, ASTS, NBIS, RMBS, AVGO, NFLX, UBER, CRM
 | 18:00 | 12:00pm | `digest` | Midday digest |
 | 20:00 | 2:00pm | `digest` | Afternoon digest |
 | 22:00 | 4:00pm | `report` | EOD digest + P&L report |
+| **00:00** | **6:00pm** | **`digest`** | **After-hours (earnings, late news)** |
 | Every 30min 15:00-22:00 | 9am-4pm | `trading` | 3 trading engines |
 | 12:00 Sat+Sun | 6am | `digest` | Weekend digest |
 
