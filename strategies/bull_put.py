@@ -156,15 +156,15 @@ class BullPutSpread(BaseStrategy):
             try:
                 from alpaca.trading.requests import MarketOrderRequest
                 from alpaca.trading.enums import OrderSide, TimeInForce
-                # Sell higher strike
-                self.broker.submit(MarketOrderRequest(
-                    symbol=best["sell_sym"], qty=1,
-                    side=OrderSide.SELL, time_in_force=TimeInForce.DAY
-                ))
-                # Buy lower strike
+                # Buy lower strike FIRST (so sell is covered, not naked)
                 self.broker.submit(MarketOrderRequest(
                     symbol=best["buy_sym"], qty=1,
                     side=OrderSide.BUY, time_in_force=TimeInForce.DAY
+                ))
+                # Then sell higher strike (now it's a spread, not naked)
+                self.broker.submit(MarketOrderRequest(
+                    symbol=best["sell_sym"], qty=1,
+                    side=OrderSide.SELL, time_in_force=TimeInForce.DAY
                 ))
                 results.append(
                     f"✅ `{symbol}` Bull Put Spread\n"
