@@ -64,16 +64,12 @@ SMCI, ASTS, NBIS, RMBS, AVGO, NFLX, UBER, CRM
 
 ## Schedule (cron-job.org → GitHub Actions)
 
-| Berlin time | ET | Job | What runs |
-|------------|-----|-----|-----------|
-| 14:00 | 8:00am | `digest` | Morning news digest |
-| 16:00 | 10:00am | `digest` | Late morning digest |
-| 18:00 | 12:00pm | `digest` | Midday digest |
-| 20:00 | 2:00pm | `digest` | Afternoon digest |
-| 22:00 | 4:00pm | `report` | EOD digest + P&L report |
-| **00:00** | **6:00pm** | **`digest`** | **After-hours (earnings, late news)** |
-| Every 30min 15:00-22:00 | 9am-4pm | `trading` | 3 trading engines |
-| 12:00 Sat+Sun | 6am | `digest` | Weekend digest |
+| UTC | Berlin | ET | Job | What runs |
+|-----|--------|-----|-----|-----------|
+| 9:00-23:00 | 11am-1am | 5am-7pm | `digest` (hourly) | News digest every hour |
+| 13:00-20:00 | 3pm-10pm | 9am-4pm | `trading` (every 30min) | 3 trading strategies |
+| 20:00 | 22:00 | 4pm | `report` | EOD P&L report |
+| 10:00 Sat+Sun | 12:00 | 6am | `digest` | Weekend digest |
 
 ---
 
