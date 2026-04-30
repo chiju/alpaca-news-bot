@@ -7,7 +7,7 @@ from alpaca.data.requests import NewsRequest, StockLatestBarRequest
 
 
 def _key():
-    return os.environ["ALPACA_API_KEY"]
+    return os.environ.get("ALPACA_LIVE_API_KEY") or os.environ["ALPACA_API_KEY"]
 
 def _secret():
     return os.environ["ALPACA_SECRET_KEY"]
