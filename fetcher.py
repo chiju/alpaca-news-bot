@@ -7,10 +7,11 @@ from alpaca.data.requests import NewsRequest, StockLatestBarRequest
 
 
 def _key():
-    return os.environ.get("ALPACA_LIVE_API_KEY") or os.environ["ALPACA_API_KEY"]
+    # Use $15K paper key for news API (paper keys work, no need for live key)
+    return os.environ.get("ALPACA_FLOW10K_API_KEY") or os.environ.get("ALPACA_LIVE_API_KEY") or os.environ["ALPACA_API_KEY"]
 
 def _secret():
-    return os.environ.get("ALPACA_LIVE_SECRET_KEY") or os.environ["ALPACA_SECRET_KEY"]
+    return os.environ.get("ALPACA_FLOW10K_SECRET_KEY") or os.environ.get("ALPACA_LIVE_SECRET_KEY") or os.environ["ALPACA_SECRET_KEY"]
 
 
 def get_news(symbols: list, hours_back: int = 2) -> list:
