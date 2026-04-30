@@ -10,7 +10,7 @@ def _key():
     return os.environ.get("ALPACA_LIVE_API_KEY") or os.environ["ALPACA_API_KEY"]
 
 def _secret():
-    return os.environ["ALPACA_SECRET_KEY"]
+    return os.environ.get("ALPACA_LIVE_SECRET_KEY") or os.environ["ALPACA_SECRET_KEY"]
 
 
 def get_news(symbols: list, hours_back: int = 2) -> list:
