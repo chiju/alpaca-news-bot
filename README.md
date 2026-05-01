@@ -37,13 +37,15 @@
 
 ## Active Strategies
 
-| Strategy | Account | Balance | Status |
-|----------|---------|---------|--------|
-| Bull-Put | PK6HIZAWDB7W7WPZ6U7243344G | $101K | ✅ Active |
-| Iron-Condor | PKCFSO4B3LTZSGAXFLZBJM2BSV | $101K | ✅ Active |
-| Covered-Call | PKOKKGGWWHIHRI67SUHVQPFGDN | $101K | ✅ Active |
-| ~~Wheel~~ | ~~PK7ITJLLP2542TQFJ2QZTM4B4I~~ | $0 | ❌ Disabled (account gone) |
-| ~~CSP~~ | — | — | ❌ Disabled (flow_trader handles) |
+| Strategy | Balance | Status |
+|----------|---------|--------|
+| Bull-Put | $101K | ✅ Active |
+| Iron-Condor | $101K | ✅ Active |
+| Covered-Call | $101K | ✅ Active |
+| ~~Wheel~~ | — | ❌ Disabled (account gone) |
+| ~~CSP~~ | — | ❌ Disabled (flow_trader handles) |
+
+**Note:** All API keys are stored as GitHub Secrets. No keys are hardcoded in the repo.
 
 ---
 
